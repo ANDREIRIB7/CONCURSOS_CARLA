@@ -43,7 +43,7 @@ from datetime import datetime, date, timedelta
 #  CONFIGURAÇÃO DA PÁGINA  (deve ser a 1ª chamada Streamlit)
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="ConcursoFocus",
+    page_title="Concursos",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -612,7 +612,7 @@ if pagina == "📊 Dashboard":
            f"{d['th']}h estudadas · {d['taxa']}% de acerto geral"
            if d["th"] > 0 else
            "Nenhuma sessão ainda — comece hoje! 🚀")
-    banner_card("Bom estudo, Candidato! 👋", msg)
+    banner_card("Bom estudo, Carla! 👋", msg)
 
     # Métricas
     cols = st.columns(6)
