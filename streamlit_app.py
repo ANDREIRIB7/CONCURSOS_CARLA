@@ -43,7 +43,7 @@ from datetime import datetime, date, timedelta
 #  CONFIGURAÇÃO DA PÁGINA  (deve ser a 1ª chamada Streamlit)
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Concursos",
+    page_title="ConcursoFocus",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -455,7 +455,120 @@ h1, h2, h3               { color: #e8ecff !important; -webkit-text-fill-color: #
 .stTabs [data-baseweb="tab"]                { background: transparent !important; border-radius: 7px !important; color: #6b7a9e !important; font-weight: 600 !important; font-size: 13px !important; }
 .stTabs [aria-selected="true"]              { background: #232b50 !important; color: #7b96ff !important; }
 .stTabs [data-baseweb="tab-panel"]          { background: transparent !important; padding-top: .8rem !important; }
+
+/* ══ SIDEBAR — nunca some completamente ═════════════════════
+   Esconde o botão nativo de colapso (chevron) para o usuário
+   não conseguir fechar acidentalmente.                        */
+button[data-testid="collapsedControl"],
+button[kind="header"][data-testid="baseButton-header"] {
+  display: none !important;
+}
+/* Garante largura mínima visível mesmo se colapsada */
+section[data-testid="stSidebar"] {
+  min-width: 240px !important;
+  transform: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+/* Botão flutuante de restaurar sidebar */
+#btn-sidebar-restore {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 99999;
+  background: linear-gradient(135deg, #5b7cfd, #6c63ff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(91,124,253,.45);
+  display: none;          /* visível só quando sidebar está oculta */
+  align-items: center;
+  justify-content: center;
+  transition: filter .18s, transform .18s;
+}
+#btn-sidebar-restore:hover { filter: brightness(1.12); transform: scale(1.06); }
 </style>
+""", unsafe_allow_html=True)
+
+# ── Botão flutuante + JS que monitora o estado da sidebar ────
+st.markdown("""
+<button id="btn-sidebar-restore" title="Abrir menu" onclick="restoreSidebar()">☰</button>
+
+<script>
+(function() {
+  // Tenta apagar a preferência salva no localStorage logo ao carregar
+  try {
+    const keys = Object.keys(localStorage);
+    keys.forEach(k => {
+      if (k.includes('sidebar') || k.includes('Sidebar')) {
+        localStorage.removeItem(k);
+      }
+    });
+  } catch(e) {}
+
+  function restoreSidebar() {
+    // 1) Clica no botão nativo de toggle (caso ainda exista no DOM)
+    const btns = document.querySelectorAll(
+      'button[data-testid="collapsedControl"], ' +
+      'button[kind="header"], ' +
+      '[data-testid="stSidebarCollapseButton"]'
+    );
+    btns.forEach(b => b.click());
+
+    // 2) Remove a classe que o Streamlit adiciona quando colapsa
+    document.querySelectorAll('[data-testid="stSidebar"]').forEach(el => {
+      el.style.transform   = '';
+      el.style.visibility  = 'visible';
+      el.style.opacity     = '1';
+      el.style.minWidth    = '240px';
+      el.classList.remove('st-emotion-cache-hidden');
+    });
+
+    // 3) Limpa localStorage
+    try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.toLowerCase().includes('sidebar')) localStorage.removeItem(k);
+      });
+    } catch(e) {}
+
+    updateBtn();
+  }
+  window.restoreSidebar = restoreSidebar;
+
+  function isSidebarHidden() {
+    const sb = document.querySelector('[data-testid="stSidebar"]');
+    if (!sb) return false;
+    const w = sb.getBoundingClientRect().width;
+    return w < 50;
+  }
+
+  function updateBtn() {
+    const btn = document.getElementById('btn-sidebar-restore');
+    if (!btn) return;
+    btn.style.display = isSidebarHidden() ? 'flex' : 'none';
+  }
+
+  // Observa mudanças no DOM/estilos da sidebar
+  const observer = new MutationObserver(updateBtn);
+  function attachObserver() {
+    const sb = document.querySelector('[data-testid="stSidebar"]');
+    if (sb) {
+      observer.observe(sb, { attributes: true, attributeFilter: ['style','class'], subtree: false });
+      updateBtn();
+    } else {
+      setTimeout(attachObserver, 300);
+    }
+  }
+  attachObserver();
+
+  // Verifica também via resize
+  window.addEventListener('resize', updateBtn);
+  setInterval(updateBtn, 800);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
@@ -612,7 +725,7 @@ if pagina == "📊 Dashboard":
            f"{d['th']}h estudadas · {d['taxa']}% de acerto geral"
            if d["th"] > 0 else
            "Nenhuma sessão ainda — comece hoje! 🚀")
-    banner_card("Bom estudo, Carla! 👋", msg)
+    banner_card("Bom estudo, Candidato! 👋", msg)
 
     # Métricas
     cols = st.columns(6)
