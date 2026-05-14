@@ -57,7 +57,7 @@ from datetime import datetime, date, timedelta
 #  CONFIGURAÇÃO DA PÁGINA  (deve ser a 1ª chamada Streamlit)
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="ConcursoFocus",
+    page_title="Carlinha Concurseira",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="auto",  # desktop: expanded; mobile: collapsed
@@ -167,7 +167,7 @@ def _gist_load(filename: str) -> list:
         t, gid = cfg
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
-            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus"},
+            headers={"Authorization": f"token {t}", "User-Agent": "Carlinha Concurseira"},
         )
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read())
@@ -185,7 +185,7 @@ def _gist_save(filename: str, data: list):
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
             data=body,
-            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus", "Content-Type": "application/json"},
+            headers={"Authorization": f"token {t}", "User-Agent": "Carlinha Concurseira", "Content-Type": "application/json"},
             method="PATCH",
         )
         urllib.request.urlopen(req, timeout=10)
