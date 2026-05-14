@@ -1,42 +1,56 @@
 """
-╔══════════════════════════════════════════════════════════════╗
-║  ConcursoFocus — Sistema de Estudos para Concursos Públicos  ║
-╠══════════════════════════════════════════════════════════════╣
-║  PERSISTÊNCIA (escolha UMA opção no Streamlit Secrets):      ║
-║                                                              ║
-║  ── OPÇÃO A: Supabase (recomendado, 100% grátis) ──────────  ║
-║  1. Crie conta em https://supabase.com (grátis)              ║
-║  2. New Project → SQL Editor → execute o SQL abaixo:         ║
-║                                                              ║
-║    CREATE TABLE IF NOT EXISTS materias (                     ║
-║      id SERIAL PRIMARY KEY,                                  ║
-║      dados JSONB NOT NULL DEFAULT '[]'::jsonb,               ║
-║      updated_at TIMESTAMPTZ DEFAULT NOW()                    ║
-║    );                                                        ║
-║    INSERT INTO materias (dados) VALUES ('[]'::jsonb);        ║
-║                                                              ║
-║    CREATE TABLE IF NOT EXISTS sessoes (                      ║
-║      id SERIAL PRIMARY KEY,                                  ║
-║      dados JSONB NOT NULL,                                   ║
-║      created_at TIMESTAMPTZ DEFAULT NOW()                    ║
-║    );                                                        ║
-║                                                              ║
-║  3. Settings → API → copie URL e anon key                    ║
-║  4. Streamlit Cloud → App Settings → Secrets:                ║
-║    [supabase]                                                ║
-║    url = "https://xxxx.supabase.co"                          ║
-║    key = "eyJhbGci..."                                       ║
-║                                                              ║
-║  ── OPÇÃO B: GitHub Gist (alternativo) ────────────────────  ║
-║    [gist]                                                    ║
-║    token   = "ghp_xxxx"                                      ║
-║    gist_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"              ║
-║    (crie o Gist com materias.json e sessoes.json = [])       ║
-╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ConcursoFocus — Sistema de Estudos para Concursos Públicos                 ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  PERSISTÊNCIA COM SUPABASE (recomendado — dados nunca somem)                ║
+║                                                                              ║
+║  PASSO A PASSO COMPLETO:                                                     ║
+║                                                                              ║
+║  1. Crie conta gratuita em https://supabase.com                              ║
+║  2. Clique em "New Project", escolha nome e senha (guarde a senha)           ║
+║  3. Aguarde o projeto iniciar (~1 min)                                       ║
+║  4. No menu lateral, clique em "SQL Editor"                                  ║
+║  5. Cole e execute o SQL abaixo (botão "Run"):                               ║
+║                                                                              ║
+║    CREATE TABLE IF NOT EXISTS materias (                                     ║
+║      id SERIAL PRIMARY KEY,                                                  ║
+║      dados JSONB NOT NULL DEFAULT '[]'::jsonb,                               ║
+║      updated_at TIMESTAMPTZ DEFAULT NOW()                                    ║
+║    );                                                                        ║
+║    INSERT INTO materias (dados) VALUES ('[]'::jsonb)                         ║
+║    ON CONFLICT DO NOTHING;                                                   ║
+║                                                                              ║
+║    CREATE TABLE IF NOT EXISTS sessoes (                                      ║
+║      id SERIAL PRIMARY KEY,                                                  ║
+║      dados JSONB NOT NULL,                                                   ║
+║      created_at TIMESTAMPTZ DEFAULT NOW()                                    ║
+║    );                                                                        ║
+║                                                                              ║
+║  6. No menu lateral, clique em "Settings" → "API"                            ║
+║  7. Copie: "Project URL" e "anon public" key                                 ║
+║  8. No Streamlit Cloud: abra seu app → "⋮" → "Settings" → "Secrets"         ║
+║  9. Cole exatamente assim (substituindo pelos seus valores):                  ║
+║                                                                              ║
+║    [supabase]                                                                ║
+║    url = "https://xxxxxxxxxxx.supabase.co"                                  ║
+║    key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."                         ║
+║                                                                              ║
+║  10. Salve e faça Reboot do app — o indicador ficará 🟢 Supabase conectado  ║
+║                                                                              ║
+║  IMPORTANTE: O Supabase gratuito NUNCA apaga seus dados automaticamente.    ║
+║  Os dados ficam no banco PostgreSQL, não na memória do Streamlit.            ║
+║  Mesmo que o app reinicie ou "adormeça", tudo é preservado.                  ║
+║                                                                              ║
+║  ── ALTERNATIVA: GitHub Gist ─────────────────────────────────────────────  ║
+║    [gist]                                                                    ║
+║    token   = "ghp_xxxx"                                                      ║
+║    gist_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"                              ║
+║    (crie o Gist com materias.json e sessoes.json = [])                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
 import streamlit as st
-import json, os, csv, io
+import json, os, io
 from datetime import datetime, date, timedelta
 
 # ─────────────────────────────────────────────────────────────
@@ -84,7 +98,6 @@ def _supa_set_materias(data: list):
     try:
         import urllib.request
         url, key = cfg
-        # upsert row id=1
         body = json.dumps({"id": 1, "dados": data}).encode()
         req = urllib.request.Request(
             f"{url}/rest/v1/materias",
@@ -207,11 +220,11 @@ def get_materias(force=False) -> list:
     return st.session_state.db_mat
 
 def get_sessoes(force=False) -> list:
-    if st.session_state.db_ses is None or force:
-        v = _supa_get_sessoes()
-        if v is None: v = _gist_load("sessoes.json")
-        if v is None: v = _local_load(SES_FILE)
-        st.session_state.db_ses = v
+    # FIX: sempre busca do backend para garantir dashboard atualizado
+    v = _supa_get_sessoes()
+    if v is None: v = _gist_load("sessoes.json")
+    if v is None: v = _local_load(SES_FILE)
+    st.session_state.db_ses = v
     return st.session_state.db_ses
 
 def save_materias(data: list):
@@ -235,13 +248,12 @@ def add_sessao(s: dict):
         _local_save(SES_FILE, ses)
 
 # ─────────────────────────────────────────────────────────────
-#  CSS — NUCLEAR FIX para inputs brancos + tema navy blue
+#  CSS
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* ══ RESET BASE ══════════════════════════════════════════════ */
 html, body, [class*="css"], .stApp * {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
   box-sizing: border-box;
@@ -252,32 +264,20 @@ header[data-testid="stHeader"] { display: none !important; }
 footer                         { display: none !important; }
 #MainMenu                      { display: none !important; }
 
-/* ══ SIDEBAR ═════════════════════════════════════════════════ */
 section[data-testid="stSidebar"]          { background: #1e2447 !important; border-right: 1px solid rgba(255,255,255,.07) !important; }
 section[data-testid="stSidebar"] *        { color: #a0aac8 !important; }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3       { color: #e8ecff !important; }
 
-/* ══ MÉTRICAS ════════════════════════════════════════════════ */
 [data-testid="stMetric"]                  { background: #232b50 !important; border: 1px solid rgba(255,255,255,.07) !important; border-radius: 12px !important; padding: 14px 16px !important; }
 [data-testid="stMetricLabel"] p           { color: #6b7a9e !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .5px !important; margin: 0 !important; }
 [data-testid="stMetricValue"]             { color: #e8ecff !important; font-size: 24px !important; font-weight: 700 !important; }
 [data-testid="stMetricDelta"] *           { font-size: 11px !important; }
 
-/* ══ FORCE-DARK em TODOS os inputs nativos ═══════════════════
-   Streamlit injeta fundo branco via inline style em alguns
-   componentes. Usamos !important em todos os seletores.       */
-input,
-input[type="text"],
-input[type="number"],
-input[type="date"],
-input[type="time"],
-input[type="datetime-local"],
-input[type="email"],
-input[type="password"],
-input[type="search"],
-textarea {
+input, input[type="text"], input[type="number"], input[type="date"],
+input[type="time"], input[type="datetime-local"], input[type="email"],
+input[type="password"], input[type="search"], textarea {
   background-color: #1c2340 !important;
   background:       #1c2340 !important;
   color:            #e8ecff !important;
@@ -297,7 +297,6 @@ input:focus, textarea:focus {
   outline: none !important;
 }
 
-/* Wrappers do Streamlit que ganham fundo branco */
 div[data-testid="stTextInput"]    > div > div,
 div[data-testid="stNumberInput"]  > div > div,
 div[data-testid="stTextArea"]     > div > div,
@@ -308,7 +307,6 @@ div[data-testid="stTimeInput"]    > div > div {
   border:           1px solid rgba(91,124,253,.28) !important;
   border-radius:    9px !important;
 }
-/* remove borda dupla */
 div[data-testid="stTextInput"]    > div > div > input,
 div[data-testid="stNumberInput"]  > div > div > input,
 div[data-testid="stTextArea"]     > div > div > textarea {
@@ -316,7 +314,6 @@ div[data-testid="stTextArea"]     > div > div > textarea {
   box-shadow: none !important;
 }
 
-/* ══ SELECTBOX ════════════════════════════════════════════════ */
 div[data-baseweb="select"] > div {
   background-color: #1c2340 !important;
   background:       #1c2340 !important;
@@ -335,7 +332,6 @@ div[data-baseweb="select"] div[class*="placeholder"] {
   color:            #3e4870 !important;
   -webkit-text-fill-color: #3e4870 !important;
 }
-/* dropdown aberto */
 div[data-baseweb="popover"],
 div[data-baseweb="menu"],
 div[data-baseweb="popover"] ul {
@@ -354,7 +350,6 @@ div[data-baseweb="option"][aria-selected="true"] {
 }
 div[data-baseweb="select"] svg { fill: #6b7a9e !important; }
 
-/* ══ LABELS ══════════════════════════════════════════════════ */
 [data-testid="stWidgetLabel"] p,
 [data-testid="stWidgetLabel"] label,
 label {
@@ -365,7 +360,6 @@ label {
   letter-spacing:  .5px !important;
 }
 
-/* ══ BOTÕES ══════════════════════════════════════════════════ */
 .stButton > button,
 [data-testid="stFormSubmitButton"] > button {
   background:   linear-gradient(135deg,#5b7cfd,#6c63ff) !important;
@@ -391,13 +385,11 @@ label {
 }
 [data-testid="stFormSubmitButton"] > button { width: 100% !important; padding: 12px !important; }
 
-/* ══ CHECKBOX & RADIO ════════════════════════════════════════ */
 .stCheckbox span, .stRadio span   { color: #a0aac8 !important; -webkit-text-fill-color: #a0aac8 !important; }
 .stCheckbox input[type="checkbox"] { accent-color: #5b7cfd !important; }
 .stRadio [data-testid="stMarkdownContainer"] p { color: #a0aac8 !important; font-size: 13px !important; font-weight: 500 !important; text-transform: none !important; letter-spacing: 0 !important; }
 .stRadio > div { gap: 6px !important; }
 
-/* ══ NUMBER INPUT buttons ════════════════════════════════════ */
 div[data-testid="stNumberInput"] button {
   background: #2d3561 !important;
   color:      #e8ecff !important;
@@ -405,7 +397,6 @@ div[data-testid="stNumberInput"] button {
   border-radius: 6px !important;
 }
 
-/* ══ DATE / TIME ─ ícones e picker ═══════════════════════════ */
 div[data-testid="stDateInput"] button,
 div[data-testid="stTimeInput"] button {
   color:      #6b7a9e !important;
@@ -413,13 +404,11 @@ div[data-testid="stTimeInput"] button {
   border:     none !important;
 }
 
-/* ══ DATAFRAME ════════════════════════════════════════════════ */
 [data-testid="stDataFrame"]           { background: #1e2447 !important; border-radius: 12px !important; overflow: hidden; }
 [data-testid="stDataFrame"] *         { background: #1e2447 !important; color: #a0aac8 !important; }
 [data-testid="stDataFrame"] th        { color: #6b7a9e !important; font-size: 11px !important; text-transform: uppercase !important; background: #1a1f3a !important; }
 [data-testid="stDataFrame"] tr:hover td { background: rgba(91,124,253,.05) !important; }
 
-/* ══ FORM container ══════════════════════════════════════════ */
 [data-testid="stForm"] {
   background:   #232b50 !important;
   border:       1px solid rgba(255,255,255,.07) !important;
@@ -427,7 +416,6 @@ div[data-testid="stTimeInput"] button {
   padding:      20px !important;
 }
 
-/* ══ ALERTS ══════════════════════════════════════════════════ */
 [data-testid="stAlert"]  { border-radius: 10px !important; }
 .stSuccess               { background: rgba(74,201,138,.1) !important; border-color: rgba(74,201,138,.3) !important; }
 .stSuccess *             { color: #4ac98a !important; }
@@ -436,12 +424,10 @@ div[data-testid="stTimeInput"] button {
 .stInfo                  { background: rgba(91,124,253,.1) !important; }
 .stInfo *                { color: #7b96ff !important; }
 
-/* ══ DIVIDER & TEXTOS ════════════════════════════════════════ */
 hr                       { border-color: rgba(255,255,255,.07) !important; }
 p, li                    { color: #a0aac8 !important; -webkit-text-fill-color: #a0aac8; }
 h1, h2, h3               { color: #e8ecff !important; -webkit-text-fill-color: #e8ecff !important; }
 
-/* ══ EXPANDER ════════════════════════════════════════════════ */
 [data-testid="stExpander"] {
   background:   #232b50 !important;
   border:       1px solid rgba(255,255,255,.07) !important;
@@ -450,121 +436,68 @@ h1, h2, h3               { color: #e8ecff !important; -webkit-text-fill-color: #
 [data-testid="stExpander"] summary,
 [data-testid="stExpander"] summary * { color: #e8ecff !important; }
 
-/* ══ TABS ════════════════════════════════════════════════════ */
 .stTabs [data-baseweb="tab-list"]           { background: #1e2447 !important; border-radius: 10px !important; gap: 4px !important; padding: 4px !important; }
 .stTabs [data-baseweb="tab"]                { background: transparent !important; border-radius: 7px !important; color: #6b7a9e !important; font-weight: 600 !important; font-size: 13px !important; }
 .stTabs [aria-selected="true"]              { background: #232b50 !important; color: #7b96ff !important; }
 .stTabs [data-baseweb="tab-panel"]          { background: transparent !important; padding-top: .8rem !important; }
 
-/* ══ SIDEBAR — nunca some completamente ═════════════════════
-   Esconde o botão nativo de colapso (chevron) para o usuário
-   não conseguir fechar acidentalmente.                        */
 button[data-testid="collapsedControl"],
 button[kind="header"][data-testid="baseButton-header"] {
   display: none !important;
 }
-/* Garante largura mínima visível mesmo se colapsada */
 section[data-testid="stSidebar"] {
   min-width: 240px !important;
   transform: none !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
-/* Botão flutuante de restaurar sidebar */
 #btn-sidebar-restore {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 99999;
+  position: fixed; top: 16px; left: 16px; z-index: 99999;
   background: linear-gradient(135deg, #5b7cfd, #6c63ff);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 9px 14px;
-  font-size: 18px;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(91,124,253,.45);
-  display: none;          /* visível só quando sidebar está oculta */
-  align-items: center;
-  justify-content: center;
+  color: #fff; border: none; border-radius: 10px; padding: 9px 14px;
+  font-size: 18px; cursor: pointer; box-shadow: 0 4px 16px rgba(91,124,253,.45);
+  display: none; align-items: center; justify-content: center;
   transition: filter .18s, transform .18s;
 }
 #btn-sidebar-restore:hover { filter: brightness(1.12); transform: scale(1.06); }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Botão flutuante + JS que monitora o estado da sidebar ────
 st.markdown("""
 <button id="btn-sidebar-restore" title="Abrir menu" onclick="restoreSidebar()">☰</button>
-
 <script>
 (function() {
-  // Tenta apagar a preferência salva no localStorage logo ao carregar
   try {
-    const keys = Object.keys(localStorage);
-    keys.forEach(k => {
-      if (k.includes('sidebar') || k.includes('Sidebar')) {
-        localStorage.removeItem(k);
-      }
+    Object.keys(localStorage).forEach(k => {
+      if (k.includes('sidebar') || k.includes('Sidebar')) localStorage.removeItem(k);
     });
   } catch(e) {}
-
   function restoreSidebar() {
-    // 1) Clica no botão nativo de toggle (caso ainda exista no DOM)
-    const btns = document.querySelectorAll(
-      'button[data-testid="collapsedControl"], ' +
-      'button[kind="header"], ' +
-      '[data-testid="stSidebarCollapseButton"]'
-    );
-    btns.forEach(b => b.click());
-
-    // 2) Remove a classe que o Streamlit adiciona quando colapsa
+    document.querySelectorAll('button[data-testid="collapsedControl"], button[kind="header"], [data-testid="stSidebarCollapseButton"]').forEach(b => b.click());
     document.querySelectorAll('[data-testid="stSidebar"]').forEach(el => {
-      el.style.transform   = '';
-      el.style.visibility  = 'visible';
-      el.style.opacity     = '1';
-      el.style.minWidth    = '240px';
+      el.style.transform = ''; el.style.visibility = 'visible';
+      el.style.opacity = '1'; el.style.minWidth = '240px';
       el.classList.remove('st-emotion-cache-hidden');
     });
-
-    // 3) Limpa localStorage
-    try {
-      Object.keys(localStorage).forEach(k => {
-        if (k.toLowerCase().includes('sidebar')) localStorage.removeItem(k);
-      });
-    } catch(e) {}
-
+    try { Object.keys(localStorage).forEach(k => { if (k.toLowerCase().includes('sidebar')) localStorage.removeItem(k); }); } catch(e) {}
     updateBtn();
   }
   window.restoreSidebar = restoreSidebar;
-
   function isSidebarHidden() {
     const sb = document.querySelector('[data-testid="stSidebar"]');
-    if (!sb) return false;
-    const w = sb.getBoundingClientRect().width;
-    return w < 50;
+    return sb ? sb.getBoundingClientRect().width < 50 : false;
   }
-
   function updateBtn() {
     const btn = document.getElementById('btn-sidebar-restore');
-    if (!btn) return;
-    btn.style.display = isSidebarHidden() ? 'flex' : 'none';
+    if (btn) btn.style.display = isSidebarHidden() ? 'flex' : 'none';
   }
-
-  // Observa mudanças no DOM/estilos da sidebar
   const observer = new MutationObserver(updateBtn);
   function attachObserver() {
     const sb = document.querySelector('[data-testid="stSidebar"]');
-    if (sb) {
-      observer.observe(sb, { attributes: true, attributeFilter: ['style','class'], subtree: false });
-      updateBtn();
-    } else {
-      setTimeout(attachObserver, 300);
-    }
+    if (sb) { observer.observe(sb, { attributes: true, attributeFilter: ['style','class'], subtree: false }); updateBtn(); }
+    else setTimeout(attachObserver, 300);
   }
   attachObserver();
-
-  // Verifica também via resize
   window.addEventListener('resize', updateBtn);
   setInterval(updateBtn, 800);
 })();
@@ -686,7 +619,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # indicador de backend
     st.markdown("<br>", unsafe_allow_html=True)
     if _supa_cfg():
         st.markdown("<div style='font-size:10px;color:#4ac98a;text-align:center'>🟢 Supabase conectado</div>", unsafe_allow_html=True)
@@ -727,7 +659,6 @@ if pagina == "📊 Dashboard":
            "Nenhuma sessão ainda — comece hoje! 🚀")
     banner_card("Bom estudo, Candidato! 👋", msg)
 
-    # Métricas
     cols = st.columns(6)
     metrics = [
         ("⏱️ Horas Totais",  f"{d['th']}h"),
@@ -742,7 +673,6 @@ if pagina == "📊 Dashboard":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Gráfico + Streak
     col1, col2 = st.columns([3, 1])
     with col1:
         evo   = d["evo"]
@@ -775,7 +705,6 @@ if pagina == "📊 Dashboard":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Tabela por matéria
     if d["pm"]:
         import pandas as pd
         rows = []
@@ -788,13 +717,9 @@ if pagina == "📊 Dashboard":
                 "Taxa de Acerto": f"{r['taxa']}%" if tot > 0 else "—",
                 "Status": "🟢 Bom" if r["taxa"] >= 70 else "🟡 Médio" if r["taxa"] >= 50 and tot > 0 else "🔴 Atenção" if tot > 0 else "⚪ Sem dados",
             })
-        section_card(
-            "<div id='df-mat'></div>",
-            "📚 Desempenho por Matéria", "#9b72f7"
-        )
+        section_card("<div id='df-mat'></div>", "📚 Desempenho por Matéria", "#9b72f7")
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-    # Sessões recentes
     if d["recentes"]:
         st.markdown("<br>", unsafe_allow_html=True)
         rows_html = ""
@@ -830,7 +755,7 @@ elif pagina == "🎯 Estudar":
 
     sug = sugerir(modo_k, turbo_k)
     if not sug:
-        st.warning("⚠️ Nenhuma matéria cadastrada. Vá até **📚 Matérias** e importe uma planilha CSV.")
+        st.warning("⚠️ Nenhuma matéria cadastrada. Vá até **📚 Matérias** e importe uma planilha XLSX.")
     else:
         prio_lbl = {1: "🔴 Alta", 2: "🟡 Média", 3: "⚪ Baixa"}
         st.markdown(f"""
@@ -871,7 +796,7 @@ elif pagina == "🎯 Estudar":
         section_card(rows_t5, "🏆 Ranking de Prioridade", "#f5a623")
 
 # ─────────────────────────────────────────────────────────────
-#  PÁGINA: REGISTRAR
+#  PÁGINA: REGISTRAR — FIX: questões visíveis imediatamente
 # ─────────────────────────────────────────────────────────────
 elif pagina == "✏️ Registrar":
     st.markdown("<h2 style='margin-bottom:2px'>Registrar Sessão</h2><p style='color:#6b7a9e;margin-bottom:18px'>Lançar resultado da bateria de estudos</p>", unsafe_allow_html=True)
@@ -881,22 +806,42 @@ elif pagina == "✏️ Registrar":
         st.warning("⚠️ Nenhuma matéria cadastrada. Vá até **📚 Matérias** primeiro.")
         st.stop()
 
+    # ── Controles FORA do form para reatividade imediata ──────
+    c1, c2 = st.columns(2)
+    with c1:
+        tipo = st.selectbox(
+            "Tipo de Sessão",
+            ["📖 Estudo de Matéria", "🧩 Resolução de Questões"],
+            key="reg_tipo",
+        )
+    with c2:
+        nomes   = [m["nome"] for m in materias]
+        def_mat = st.session_state.get("sug_mat", nomes[0])
+        def_idx = nomes.index(def_mat) if def_mat in nomes else 0
+        mat_sel = st.selectbox("Matéria", nomes, index=def_idx, key="reg_mat")
+
+    mat_obj  = next((m for m in materias if m["nome"] == mat_sel), None)
+    cont_lst = [c["nome"] for c in mat_obj.get("conteudos", [])] if mat_obj else ["Geral"]
+    def_c    = st.session_state.get("sug_cont", "")
+    def_ci   = cont_lst.index(def_c) if def_c in cont_lst else 0
+    cont_sel = st.selectbox("Conteúdo", cont_lst, index=def_ci, key="reg_cont")
+
+    # ── Campos de questão aparecem IMEDIATAMENTE se tipo = Questões ──
+    acertos = erros = 0
+    if "Questões" in tipo:
+        st.markdown("<div style='background:#1e2d4a;border:1px solid rgba(91,124,253,.3);border-radius:10px;padding:14px 16px 4px;margin:4px 0 8px'>", unsafe_allow_html=True)
+        qc1, qc2 = st.columns(2)
+        with qc1: acertos = st.number_input("✅ Acertos", min_value=0, value=0, step=1, key="reg_acertos")
+        with qc2: erros   = st.number_input("❌ Erros",   min_value=0, value=0, step=1, key="reg_erros")
+        total_q = acertos + erros
+        if total_q > 0:
+            pct = round(acertos / total_q * 100)
+            cor = "#4ac98a" if pct >= 70 else "#f5a623" if pct >= 50 else "#f56565"
+            st.markdown(f"<div style='font-size:12px;color:{cor};margin-bottom:10px;font-weight:600'>Taxa: {pct}% · {acertos}/{total_q} acertos</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Restante do form ──────────────────────────────────────
     with st.form("form_sessao", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            tipo = st.selectbox("Tipo de Sessão", ["📖 Estudo de Matéria", "🧩 Resolução de Questões"])
-        with c2:
-            nomes   = [m["nome"] for m in materias]
-            def_mat = st.session_state.get("sug_mat", nomes[0])
-            def_idx = nomes.index(def_mat) if def_mat in nomes else 0
-            mat_sel = st.selectbox("Matéria", nomes, index=def_idx)
-
-        mat_obj  = next((m for m in materias if m["nome"] == mat_sel), None)
-        cont_lst = [c["nome"] for c in mat_obj.get("conteudos", [])] if mat_obj else ["Geral"]
-        def_c    = st.session_state.get("sug_cont", "")
-        def_ci   = cont_lst.index(def_c) if def_c in cont_lst else 0
-        cont_sel = st.selectbox("Conteúdo", cont_lst, index=def_ci)
-
         c1, c2 = st.columns(2)
         with c1:
             d_ini = st.date_input("Data Início", value=date.today())
@@ -905,117 +850,204 @@ elif pagina == "✏️ Registrar":
             d_fim = st.date_input("Data Fim", value=date.today())
             h_fim = st.time_input("Hora Fim",   value=datetime.now().replace(second=0, microsecond=0))
 
-        acertos = erros = 0
-        if "Questões" in tipo:
-            qc1, qc2 = st.columns(2)
-            with qc1: acertos = st.number_input("✅ Acertos", min_value=0, value=0, step=1)
-            with qc2: erros   = st.number_input("❌ Erros",   min_value=0, value=0, step=1)
-
         encerrou = st.checkbox("Encerrei esse assunto ✓")
         obs      = st.text_area("Observações", placeholder="Anotações, dificuldades, dúvidas...")
 
         if st.form_submit_button("💾  Salvar Sessão"):
+            # Captura os valores dos widgets externos ao form via session_state
+            tipo_ss     = st.session_state.get("reg_tipo", tipo)
+            mat_ss      = st.session_state.get("reg_mat",  mat_sel)
+            cont_ss     = st.session_state.get("reg_cont", cont_sel)
+            acertos_ss  = int(st.session_state.get("reg_acertos", 0)) if "Questões" in tipo_ss else 0
+            erros_ss    = int(st.session_state.get("reg_erros",   0)) if "Questões" in tipo_ss else 0
+
             dt_ini = datetime.combine(d_ini, h_ini)
             dt_fim = datetime.combine(d_fim, h_fim)
             dur    = max(int((dt_fim - dt_ini).total_seconds() / 60), 0)
             add_sessao({
                 "id":               datetime.now().isoformat(),
-                "materia":          mat_sel,
-                "conteudo":         cont_sel,
-                "tipo":             "questoes" if "Questões" in tipo else "materia",
+                "materia":          mat_ss,
+                "conteudo":         cont_ss,
+                "tipo":             "questoes" if "Questões" in tipo_ss else "materia",
                 "data_inicio":      dt_ini.isoformat(),
                 "data_fim":         dt_fim.isoformat(),
                 "duracao_min":      dur,
                 "encerrou_assunto": encerrou,
-                "acertos":          int(acertos),
-                "erros":            int(erros),
+                "acertos":          acertos_ss,
+                "erros":            erros_ss,
                 "observacoes":      obs,
             })
             for k in ("sug_mat", "sug_cont", "sug_tipo"):
                 st.session_state.pop(k, None)
             st.success(f"✅ Sessão de {dur} min salva com sucesso!")
+            st.rerun()
 
 # ─────────────────────────────────────────────────────────────
-#  PÁGINA: MATÉRIAS
+#  PÁGINA: MATÉRIAS — XLSX + edição inline
 # ─────────────────────────────────────────────────────────────
 elif pagina == "📚 Matérias":
     st.markdown("<h2 style='margin-bottom:2px'>Gestão de Matérias</h2><p style='color:#6b7a9e;margin-bottom:18px'>Edital, conteúdos e prioridades</p>", unsafe_allow_html=True)
 
-    # modelo CSV
-    modelo_rows = [
-        ["materia", "conteudo", "prioridade"],
-        ["Direito Constitucional", "Princípios Fundamentais", 1],
-        ["Direito Constitucional", "Direitos e Garantias", 1],
-        ["Direito Constitucional", "Organização do Estado", 2],
-        ["Direito Administrativo", "Atos Administrativos", 1],
-        ["Direito Administrativo", "Licitações e Contratos", 1],
-        ["Língua Portuguesa", "Interpretação de Texto", 1],
-        ["Língua Portuguesa", "Gramática", 2],
-        ["Raciocínio Lógico", "Proposições Lógicas", 1],
-        ["Informática", "Segurança da Informação", 1],
-    ]
-    buf_m = io.StringIO()
-    csv.writer(buf_m).writerows(modelo_rows)
+    # ── Gera modelo XLSX para download ───────────────────────
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Matérias"
+
+        # Cabeçalho estilizado
+        headers = ["materia", "conteudo", "prioridade"]
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill("solid", fgColor="3B4FBF")
+            cell.alignment = Alignment(horizontal="center")
+
+        modelo_rows = [
+            ["Direito Constitucional", "Princípios Fundamentais", 1],
+            ["Direito Constitucional", "Direitos e Garantias", 1],
+            ["Direito Constitucional", "Organização do Estado", 2],
+            ["Direito Administrativo", "Atos Administrativos", 1],
+            ["Direito Administrativo", "Licitações e Contratos", 1],
+            ["Língua Portuguesa", "Interpretação de Texto", 1],
+            ["Língua Portuguesa", "Gramática", 2],
+            ["Raciocínio Lógico", "Proposições Lógicas", 1],
+            ["Informática", "Segurança da Informação", 1],
+        ]
+        for row in modelo_rows:
+            ws.append(row)
+
+        ws.column_dimensions["A"].width = 35
+        ws.column_dimensions["B"].width = 35
+        ws.column_dimensions["C"].width = 12
+
+        buf_xlsx = io.BytesIO()
+        wb.save(buf_xlsx)
+        buf_xlsx.seek(0)
+        xlsx_bytes = buf_xlsx.getvalue()
+    except ImportError:
+        xlsx_bytes = None
 
     c1, c2 = st.columns([2, 1])
     with c1:
-        arquivo = st.file_uploader("📤 Importar Planilha CSV", type=["csv"])
+        arquivo = st.file_uploader("📤 Importar Planilha XLSX", type=["xlsx", "xls"])
     with c2:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("⬇ Baixar Modelo CSV", buf_m.getvalue().encode("utf-8-sig"), "modelo_materias.csv", "text/csv")
+        if xlsx_bytes:
+            st.download_button(
+                "⬇ Baixar Modelo XLSX",
+                xlsx_bytes,
+                "modelo_materias.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        else:
+            st.info("openpyxl não instalado — adicione ao requirements.txt")
 
     if arquivo:
-        content = arquivo.read().decode("utf-8-sig")
-        reader  = csv.DictReader(io.StringIO(content))
-        md = {}
-        for row in reader:
-            nome = row.get("materia", "").strip()
-            cont = row.get("conteudo", "").strip()
-            prio = int(row.get("prioridade", 2) or 2)
-            if not nome: continue
-            if nome not in md:
-                md[nome] = {"nome": nome, "prioridade": prio, "questoes_edital": 10, "conteudos": []}
-            if cont:
-                md[nome]["conteudos"].append({"nome": cont, "prioridade": prio})
-            if prio < md[nome]["prioridade"]:
-                md[nome]["prioridade"] = prio
+        try:
+            import openpyxl
+            wb_up = openpyxl.load_workbook(arquivo)
+            ws_up = wb_up.active
+            rows_up = list(ws_up.iter_rows(values_only=True))
 
-        mat_novas = list(md.values())
-        st.markdown("<br><div style='font-size:13px;font-weight:700;color:#e8ecff;margin-bottom:10px'>⚙️ Configure questões do edital e prioridade</div>", unsafe_allow_html=True)
+            # Detecta cabeçalho
+            if rows_up and str(rows_up[0][0]).lower().strip() == "materia":
+                rows_up = rows_up[1:]
 
-        with st.form("form_import"):
-            st.markdown("<div style='display:grid;grid-template-columns:1fr 140px 110px;gap:8px;font-size:10px;color:#6b7a9e;text-transform:uppercase;letter-spacing:.5px;padding:4px 0 10px;border-bottom:1px solid rgba(255,255,255,.07)'><div>Matéria</div><div>Prioridade</div><div>Questões</div></div>", unsafe_allow_html=True)
-            for i, m in enumerate(mat_novas):
-                cc1, cc2, cc3 = st.columns([3, 1.2, 1])
-                with cc1:
-                    st.markdown(f"<div style='padding:10px 0;font-size:13px;color:#a0aac8'>{m['nome']}</div>", unsafe_allow_html=True)
-                with cc2:
-                    ops  = ["🔴 Alta (1)", "🟡 Média (2)", "⚪ Baixa (3)"]
-                    pidx = m["prioridade"] - 1
-                    psel = st.selectbox("p", ops, index=pidx, key=f"pi_{i}", label_visibility="collapsed")
-                    mat_novas[i]["prioridade"] = ops.index(psel) + 1
-                with cc3:
-                    q = st.number_input("q", min_value=0, value=m["questoes_edital"], key=f"qi_{i}", label_visibility="collapsed")
-                    mat_novas[i]["questoes_edital"] = int(q)
+            md = {}
+            for row in rows_up:
+                if not row or not row[0]: continue
+                nome = str(row[0]).strip()
+                cont = str(row[1]).strip() if len(row) > 1 and row[1] else ""
+                prio = int(row[2]) if len(row) > 2 and row[2] and str(row[2]).isdigit() else 2
+                prio = max(1, min(3, prio))
+                if nome not in md:
+                    md[nome] = {"nome": nome, "prioridade": prio, "questoes_edital": 10, "conteudos": []}
+                if cont:
+                    md[nome]["conteudos"].append({"nome": cont, "prioridade": prio})
+                if prio < md[nome]["prioridade"]:
+                    md[nome]["prioridade"] = prio
 
-            if st.form_submit_button("✅  Salvar Matérias"):
-                save_materias(mat_novas)
-                st.session_state.db_mat = None  # força reload
-                st.success(f"✅ {len(mat_novas)} matérias salvas!")
-                st.rerun()
+            mat_novas = list(md.values())
+            st.markdown("<br><div style='font-size:13px;font-weight:700;color:#e8ecff;margin-bottom:10px'>⚙️ Configure questões do edital e prioridade</div>", unsafe_allow_html=True)
 
-    # tabela de matérias cadastradas
+            with st.form("form_import"):
+                st.markdown("<div style='display:grid;grid-template-columns:1fr 140px 110px;gap:8px;font-size:10px;color:#6b7a9e;text-transform:uppercase;letter-spacing:.5px;padding:4px 0 10px;border-bottom:1px solid rgba(255,255,255,.07)'><div>Matéria</div><div>Prioridade</div><div>Questões</div></div>", unsafe_allow_html=True)
+                for i, m in enumerate(mat_novas):
+                    cc1, cc2, cc3 = st.columns([3, 1.2, 1])
+                    with cc1:
+                        st.markdown(f"<div style='padding:10px 0;font-size:13px;color:#a0aac8'>{m['nome']}</div>", unsafe_allow_html=True)
+                    with cc2:
+                        ops  = ["🔴 Alta (1)", "🟡 Média (2)", "⚪ Baixa (3)"]
+                        pidx = m["prioridade"] - 1
+                        psel = st.selectbox("p", ops, index=pidx, key=f"pi_{i}", label_visibility="collapsed")
+                        mat_novas[i]["prioridade"] = ops.index(psel) + 1
+                    with cc3:
+                        q = st.number_input("q", min_value=0, value=m["questoes_edital"], key=f"qi_{i}", label_visibility="collapsed")
+                        mat_novas[i]["questoes_edital"] = int(q)
+
+                if st.form_submit_button("✅  Salvar Matérias"):
+                    save_materias(mat_novas)
+                    st.session_state.db_mat = None
+                    st.success(f"✅ {len(mat_novas)} matérias salvas!")
+                    st.rerun()
+
+        except Exception as e:
+            st.error(f"Erro ao ler XLSX: {e}. Verifique se o arquivo tem as colunas: materia, conteudo, prioridade")
+
+    # ── Tabela de matérias cadastradas + botão EDITAR ────────
     mats = get_materias()
     if mats:
         import pandas as pd
         st.markdown("<br>", unsafe_allow_html=True)
-        rows = [{"Matéria": m["nome"],
-                 "Prioridade": {1:"🔴 Alta",2:"🟡 Média",3:"⚪ Baixa"}.get(m.get("prioridade",2),"—"),
-                 "Questões Edital": m.get("questoes_edital", 0),
-                 "Nº Conteúdos": len(m.get("conteudos", []))} for m in mats]
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+        # Toggle modo edição
+        if "editando_materias" not in st.session_state:
+            st.session_state.editando_materias = False
+
+        col_tit, col_btn = st.columns([4, 1])
+        with col_tit:
+            st.markdown("<div style='font-size:13px;font-weight:700;color:#e8ecff;margin-bottom:10px'>📋 Matérias Cadastradas</div>", unsafe_allow_html=True)
+        with col_btn:
+            lbl_btn = "💾 Concluir Edição" if st.session_state.editando_materias else "✏️ Editar Base"
+            if st.button(lbl_btn, key="btn_editar"):
+                st.session_state.editando_materias = not st.session_state.editando_materias
+                st.rerun()
+
+        if st.session_state.editando_materias:
+            st.info("✏️ Modo edição ativo — altere e clique em **Salvar Alterações**.")
+            with st.form("form_editar_mats"):
+                mats_edit = [dict(m) for m in mats]  # cópia
+                st.markdown("<div style='display:grid;grid-template-columns:1fr 140px 110px;gap:8px;font-size:10px;color:#6b7a9e;text-transform:uppercase;letter-spacing:.5px;padding:4px 0 10px;border-bottom:1px solid rgba(255,255,255,.07)'><div>Matéria</div><div>Prioridade</div><div>Questões</div></div>", unsafe_allow_html=True)
+                for i, m in enumerate(mats_edit):
+                    cc1, cc2, cc3 = st.columns([3, 1.2, 1])
+                    with cc1:
+                        st.markdown(f"<div style='padding:10px 0;font-size:13px;color:#a0aac8'>{m['nome']}</div>", unsafe_allow_html=True)
+                    with cc2:
+                        ops  = ["🔴 Alta (1)", "🟡 Média (2)", "⚪ Baixa (3)"]
+                        pidx = max(0, m.get("prioridade", 2) - 1)
+                        psel = st.selectbox("p", ops, index=pidx, key=f"ep_{i}", label_visibility="collapsed")
+                        mats_edit[i]["prioridade"] = ops.index(psel) + 1
+                    with cc3:
+                        q = st.number_input("q", min_value=0, value=m.get("questoes_edital", 10), key=f"eq_{i}", label_visibility="collapsed")
+                        mats_edit[i]["questoes_edital"] = int(q)
+
+                if st.form_submit_button("💾  Salvar Alterações"):
+                    save_materias(mats_edit)
+                    st.session_state.db_mat = None
+                    st.session_state.editando_materias = False
+                    st.success("✅ Base atualizada com sucesso!")
+                    st.rerun()
+        else:
+            rows = [{"Matéria": m["nome"],
+                     "Prioridade": {1:"🔴 Alta",2:"🟡 Média",3:"⚪ Baixa"}.get(m.get("prioridade",2),"—"),
+                     "Questões Edital": m.get("questoes_edital", 0),
+                     "Nº Conteúdos": len(m.get("conteudos", []))} for m in mats]
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     elif not arquivo:
-        st.info("Nenhuma matéria cadastrada ainda. Importe um CSV acima.")
+        st.info("Nenhuma matéria cadastrada ainda. Importe um XLSX acima.")
 
 # ─────────────────────────────────────────────────────────────
 #  PÁGINA: HISTÓRICO
@@ -1046,6 +1078,31 @@ elif pagina == "🗂️ Histórico":
 
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-        buf_e = io.StringIO()
-        pd.DataFrame(rows).to_csv(buf_e, index=False)
-        st.download_button("⬇ Exportar histórico CSV", buf_e.getvalue().encode("utf-8-sig"), "historico_sessoes.csv", "text/csv")
+        # Exportar como XLSX
+        try:
+            import openpyxl
+            wb_exp = openpyxl.Workbook()
+            ws_exp = wb_exp.active
+            ws_exp.title = "Histórico"
+            from openpyxl.styles import Font, PatternFill, Alignment
+            headers_exp = list(rows[0].keys())
+            for col, h in enumerate(headers_exp, 1):
+                cell = ws_exp.cell(row=1, column=col, value=h)
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill("solid", fgColor="3B4FBF")
+                cell.alignment = Alignment(horizontal="center")
+            for r in rows:
+                ws_exp.append(list(r.values()))
+            buf_exp = io.BytesIO()
+            wb_exp.save(buf_exp)
+            buf_exp.seek(0)
+            st.download_button(
+                "⬇ Exportar histórico XLSX",
+                buf_exp.getvalue(),
+                "historico_sessoes.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        except ImportError:
+            buf_e = io.StringIO()
+            pd.DataFrame(rows).to_csv(buf_e, index=False)
+            st.download_button("⬇ Exportar histórico CSV", buf_e.getvalue().encode("utf-8-sig"), "historico_sessoes.csv", "text/csv")
