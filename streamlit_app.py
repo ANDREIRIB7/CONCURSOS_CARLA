@@ -264,19 +264,38 @@ header[data-testid="stHeader"] { display: none !important; }
 footer                         { display: none !important; }
 #MainMenu                      { display: none !important; }
 
-/* ══ SIDEBAR base ════════════════════════════════════════════ */
+/* ══ MOBILE: esconde TUDO relacionado à sidebar ═════════════
+   Usa todos os seletores possíveis para garantir que nenhum
+   elemento do Streamlit relacionado à sidebar apareça.        */
+@media (max-width: 767px) {
+  section[data-testid="stSidebar"]          { display: none !important; width: 0 !important; min-width: 0 !important; max-width: 0 !important; overflow: hidden !important; padding: 0 !important; margin: 0 !important; }
+  [data-testid="stSidebarCollapseButton"]   { display: none !important; }
+  button[data-testid="collapsedControl"]    { display: none !important; }
+  [data-testid="collapsedControl"]          { display: none !important; }
+  /* faz o conteúdo principal ocupar 100% */
+  .main { margin-left: 0 !important; width: 100% !important; }
+  [data-testid="stAppViewContainer"] > .main { margin-left: 0 !important; }
+  section.main { margin-left: 0 !important; }
+  /* padding inferior para não ficar atrás da bottom nav */
+  .block-container {
+    padding-bottom: 76px !important;
+    padding-top: 0.8rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}
+
+/* ══ SIDEBAR desktop: sempre visível e fixa ════════════════ */
 section[data-testid="stSidebar"] {
   background: #1e2447 !important;
   border-right: 1px solid rgba(255,255,255,.07) !important;
-  transition: transform .28s cubic-bezier(.4,0,.2,1),
-              visibility .28s, opacity .28s !important;
 }
 section[data-testid="stSidebar"] *   { color: #a0aac8 !important; }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3  { color: #e8ecff !important; }
 
-/* Esconde SEMPRE o botão nativo de colapso do Streamlit */
+/* Esconde botão nativo de colapso em qualquer tela */
 button[data-testid="collapsedControl"],
 button[data-testid="stSidebarCollapseButton"],
 [data-testid="stSidebarCollapseButton"],
@@ -284,77 +303,13 @@ button[kind="header"][data-testid="baseButton-header"] {
   display: none !important;
 }
 
-/* ══ DESKTOP (≥ 768px): sidebar fixa, sempre visível ═══════ */
 @media (min-width: 768px) {
   section[data-testid="stSidebar"] {
-    position: relative !important;
-    transform: none !important;
-    visibility: visible !important;
-    opacity: 1 !important;
     min-width: 244px !important;
-    z-index: 1 !important;
-  }
-  #cf-menu-btn    { display: none !important; }
-  #cf-overlay     { display: none !important; }
-  .block-container { padding-top: 1.2rem !important; }
-}
-
-/* ══ MOBILE / TABLET (< 768px): drawer deslizante ══════════ */
-@media (max-width: 767px) {
-  /* sidebar some por padrão (fora da tela à esquerda) */
-  section[data-testid="stSidebar"] {
-    position: fixed !important;
-    top: 0 !important; left: 0 !important;
-    height: 100dvh !important;
-    width: 82vw !important;
-    max-width: 300px !important;
-    z-index: 10000 !important;
-    transform: translateX(-110%) !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    overflow-y: auto !important;
-    box-shadow: none !important;
-  }
-  /* sidebar aberta — classe .sb-open no <body> */
-  body.sb-open section[data-testid="stSidebar"] {
-    transform: translateX(0) !important;
     visibility: visible !important;
     opacity: 1 !important;
-    box-shadow: 6px 0 40px rgba(0,0,0,.6) !important;
-  }
-  /* conteúdo principal não se move */
-  .main .block-container {
-    padding-top: 3.8rem !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
   }
 }
-
-/* ══ OVERLAY escuro por trás da sidebar ═════════════════════ */
-#cf-overlay {
-  display: none;
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,.6);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-}
-body.sb-open #cf-overlay { display: block; }
-
-/* ══ BOTÃO ☰ hamburger fixo (mobile only) ═══════════════════ */
-#cf-menu-btn {
-  display: none;          /* JS mostra apenas no mobile */
-  position: fixed;
-  top: 10px; left: 10px;
-  z-index: 10001;
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg,#5b7cfd,#6c63ff);
-  color: #fff; border: none; border-radius: 13px;
-  font-size: 20px; line-height: 1; cursor: pointer;
-  align-items: center; justify-content: center;
-  box-shadow: 0 4px 18px rgba(91,124,253,.5);
-  transition: transform .18s, filter .18s;
-}
-#cf-menu-btn:active { transform: scale(.93); filter: brightness(1.15); }
 
 /* ══ MÉTRICAS ════════════════════════════════════════════════ */
 [data-testid="stMetric"]        { background: #232b50 !important; border: 1px solid rgba(255,255,255,.07) !important; border-radius: 12px !important; padding: 14px 16px !important; }
@@ -539,83 +494,7 @@ h1, h2, h3               { color: #e8ecff !important; -webkit-text-fill-color: #
 </style>
 """, unsafe_allow_html=True)
 
-# ── Elementos HTML do menu mobile + JS ───────────────────────
-st.markdown("""
-<div id="cf-overlay" onclick="cfClose()"></div>
-<button id="cf-menu-btn" title="Abrir menu" onclick="cfToggle()">☰</button>
 
-<script>
-(function(){
-  /* ── helpers ─────────────────────────────────────── */
-  function mobile(){ return window.innerWidth < 768; }
-
-  function isOpen(){
-    return document.body.classList.contains('sb-open');
-  }
-
-  function cfOpen(){
-    document.body.classList.add('sb-open');
-    var btn = document.getElementById('cf-menu-btn');
-    if(btn){ btn.textContent = '✕'; btn.title = 'Fechar menu'; }
-  }
-
-  function cfClose(){
-    document.body.classList.remove('sb-open');
-    var btn = document.getElementById('cf-menu-btn');
-    if(btn){ btn.textContent = '☰'; btn.title = 'Abrir menu'; }
-  }
-
-  window.cfToggle = function(){ isOpen() ? cfClose() : cfOpen(); };
-  window.cfClose  = cfClose;
-
-  /* ── mostra/esconde botão ☰ conforme largura ─────── */
-  function syncBtn(){
-    var btn = document.getElementById('cf-menu-btn');
-    if(!btn) return;
-    if(mobile()){
-      btn.style.display = 'flex';
-      // garante sidebar fechada ao entrar no mobile
-      if(isOpen()) cfClose();
-    } else {
-      btn.style.display = 'none';
-      document.body.classList.remove('sb-open');
-    }
-  }
-
-  /* Fecha a sidebar quando o usuário clica em qualquer item
-     do menu (Streamlit faz rerun e o drawer deve fechar) */
-  function watchSidebarClicks(){
-    var sb = document.querySelector('section[data-testid="stSidebar"]');
-    if(!sb){ setTimeout(watchSidebarClicks, 300); return; }
-    sb.addEventListener('click', function(e){
-      // clique em radio button / link → fecha
-      if(mobile() && isOpen()){
-        var tag = e.target.tagName;
-        if(tag === 'INPUT' || tag === 'LABEL' || tag === 'SPAN' || tag === 'P'){
-          setTimeout(cfClose, 120);
-        }
-      }
-    });
-  }
-
-  /* ── init ────────────────────────────────────────── */
-  function init(){
-    syncBtn();
-    watchSidebarClicks();
-    window.addEventListener('resize', syncBtn);
-  }
-
-  // aguarda DOM pronto
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-  // safety net para Streamlit re-renders
-  setInterval(syncBtn, 800);
-})();
-</script>
-""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 #  ALGORITMO DE SUGESTÃO
@@ -699,10 +578,20 @@ def calc_dash():
     }
 
 # ─────────────────────────────────────────────────────────────
-#  SIDEBAR
+#  NAVEGAÇÃO — sidebar no desktop, bottom-nav no mobile
 # ─────────────────────────────────────────────────────────────
+PAGES     = ["📊 Dashboard", "🎯 Estudar", "✏️ Registrar", "📚 Matérias", "🗂️ Histórico"]
+PAGE_KEYS = ["dashboard", "estudar", "registrar", "materias", "historico"]
+PAGE_ICONS = ["📊", "🎯", "✏️", "📚", "🗂️"]
+PAGE_LABELS = ["Dashboard", "Estudar", "Registrar", "Matérias", "Histórico"]
+
+# lê a página ativa via query param (default: dashboard)
+_qp  = st.query_params.get("p", "dashboard")
+_idx = PAGE_KEYS.index(_qp) if _qp in PAGE_KEYS else 0
+
 def _card(txt): return f"<div style='background:#232b50;border-radius:9px;padding:9px 12px;display:flex;justify-content:space-between;margin-bottom:5px'>{txt}</div>"
 
+# ── SIDEBAR (desktop) ─────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
     <div style='padding:4px 0 16px'>
@@ -717,21 +606,26 @@ with st.sidebar:
     </div>""", unsafe_allow_html=True)
     st.divider()
 
-    pagina = st.radio(
+    sb_sel = st.radio(
         "nav", label_visibility="collapsed",
-        options=["📊 Dashboard", "🎯 Estudar", "✏️ Registrar", "📚 Matérias", "🗂️ Histórico"],
+        options=PAGES,
+        index=_idx,
     )
+    # sincroniza query param ao mudar pela sidebar
+    _new_key = PAGE_KEYS[PAGES.index(sb_sel)]
+    if _new_key != _qp:
+        st.query_params["p"] = _new_key
+        st.rerun()
 
     st.divider()
-    d = calc_dash()
+    d_sb = calc_dash()
     st.markdown("<div style='font-size:10px;color:#6b7a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px'>Resumo Rápido</div>", unsafe_allow_html=True)
     st.markdown(
-        _card(f"<span style='font-size:12px;color:#6b7a9e'>Horas totais</span><span style='font-size:12px;font-weight:700;color:#7b96ff'>{d['th']}h</span>") +
-        _card(f"<span style='font-size:12px;color:#6b7a9e'>Taxa de acerto</span><span style='font-size:12px;font-weight:700;color:#4ac98a'>{d['taxa']}%</span>") +
-        _card(f"<span style='font-size:12px;color:#6b7a9e'>Sequência</span><span style='font-size:12px;font-weight:700;color:#f5a623'>{d['streak']} 🔥</span>"),
+        _card(f"<span style='font-size:12px;color:#6b7a9e'>Horas totais</span><span style='font-size:12px;font-weight:700;color:#7b96ff'>{d_sb['th']}h</span>") +
+        _card(f"<span style='font-size:12px;color:#6b7a9e'>Taxa de acerto</span><span style='font-size:12px;font-weight:700;color:#4ac98a'>{d_sb['taxa']}%</span>") +
+        _card(f"<span style='font-size:12px;color:#6b7a9e'>Sequência</span><span style='font-size:12px;font-weight:700;color:#f5a623'>{d_sb['streak']} 🔥</span>"),
         unsafe_allow_html=True,
     )
-
     st.markdown("<br>", unsafe_allow_html=True)
     if _supa_cfg():
         st.markdown("<div style='font-size:10px;color:#4ac98a;text-align:center'>🟢 Supabase conectado</div>", unsafe_allow_html=True)
@@ -739,6 +633,130 @@ with st.sidebar:
         st.markdown("<div style='font-size:10px;color:#f5a623;text-align:center'>🟡 GitHub Gist</div>", unsafe_allow_html=True)
     else:
         st.markdown("<div style='font-size:10px;color:#f56565;text-align:center'>🔴 Somente local</div>", unsafe_allow_html=True)
+
+# página ativa (usada pelo restante do código)
+pagina = PAGES[_idx]
+
+# ── BOTTOM NAV (mobile) ───────────────────────────────────────
+# Estratégia: st.components.v1.html com Streamlit.setComponentValue
+# envia a chave da página de volta ao Python → st.query_params + rerun.
+import streamlit.components.v1 as _components
+
+_nav_items_html = ""
+for i, (icon, label, key) in enumerate(zip(PAGE_ICONS, PAGE_LABELS, PAGE_KEYS)):
+    active_cls = "cf-nav-active" if i == _idx else ""
+    _nav_items_html += f"""
+    <button class="cf-nav-item {active_cls}" onclick="navigate('{key}')">
+      <span class="cf-nav-icon">{icon}</span>
+      <span class="cf-nav-lbl">{label}</span>
+    </button>"""
+
+_nav_click = _components.html(f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+  body {{ background: transparent; overflow: hidden; }}
+  nav {{
+    display: flex;
+    width: 100%;
+    background: #1e2447;
+    border-top: 1px solid rgba(91,124,253,.25);
+    box-shadow: 0 -4px 24px rgba(0,0,0,.45);
+    height: 62px;
+    align-items: stretch;
+    padding: 0 4px;
+    gap: 2px;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }}
+  .cf-nav-item {{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 6px 2px 4px;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+    color: inherit;
+  }}
+  .cf-nav-item:active {{ background: rgba(91,124,253,.18); }}
+  .cf-nav-icon {{
+    font-size: 20px;
+    line-height: 1;
+    filter: grayscale(40%) opacity(0.6);
+    transition: filter .15s, transform .15s;
+  }}
+  .cf-nav-lbl {{
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #6b7a9e;
+    letter-spacing: .3px;
+    line-height: 1;
+  }}
+  .cf-nav-item.cf-nav-active .cf-nav-icon {{ filter: none; transform: scale(1.12); }}
+  .cf-nav-item.cf-nav-active .cf-nav-lbl  {{ color: #7b96ff; }}
+  .cf-nav-item.cf-nav-active              {{ background: rgba(91,124,253,.12); }}
+</style>
+</head>
+<body>
+<nav>{_nav_items_html}</nav>
+<script>
+  function navigate(key) {{
+    window.parent.postMessage({{
+      type: "streamlit:setComponentValue",
+      value: key
+    }}, "*");
+  }}
+</script>
+</body>
+</html>
+""", height=62, scrolling=False)
+
+# Se o usuário clicou em algum item da bottom nav, redireciona
+if _nav_click and _nav_click in PAGE_KEYS and _nav_click != _qp:
+    st.query_params["p"] = _nav_click
+    st.rerun()
+
+# CSS: esconde sidebar no mobile e posiciona o iframe fixo na base
+st.markdown("""
+<style>
+@media (max-width: 767px) {
+  section[data-testid="stSidebar"],
+  [data-testid="stSidebarCollapseButton"],
+  button[data-testid="collapsedControl"] { display: none !important; }
+  .main { margin-left: 0 !important; width: 100% !important; }
+  [data-testid="stAppViewContainer"] > .main { margin-left: 0 !important; }
+  .main .block-container {
+    padding-bottom: 80px !important;
+    padding-top: 1rem !important;
+    padding-left: 0.8rem !important;
+    padding-right: 0.8rem !important;
+  }
+  iframe[title="streamlit_components_v1_html"] {
+    position: fixed !important;
+    bottom: 0 !important; left: 0 !important; right: 0 !important;
+    width: 100% !important;
+    height: 62px !important;
+    z-index: 99999 !important;
+    border: none !important;
+  }
+}
+@media (min-width: 768px) {
+  iframe[title="streamlit_components_v1_html"] {
+    display: none !important;
+    height: 0 !important;
+  }
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 #  HELPERS DE UI
