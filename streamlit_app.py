@@ -57,7 +57,7 @@ from datetime import datetime, date, timedelta
 #  CONFIGURAÇÃO DA PÁGINA  (deve ser a 1ª chamada Streamlit)
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Carlinha Concurseira",
+    page_title="ConcursoFocus",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="auto",  # desktop: expanded; mobile: collapsed
@@ -167,7 +167,7 @@ def _gist_load(filename: str) -> list:
         t, gid = cfg
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
-            headers={"Authorization": f"token {t}", "User-Agent": "Carlinha Concurseira"},
+            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus"},
         )
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read())
@@ -185,7 +185,7 @@ def _gist_save(filename: str, data: list):
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
             data=body,
-            headers={"Authorization": f"token {t}", "User-Agent": "Carlinha Concurseira", "Content-Type": "application/json"},
+            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus", "Content-Type": "application/json"},
             method="PATCH",
         )
         urllib.request.urlopen(req, timeout=10)
@@ -264,93 +264,97 @@ header[data-testid="stHeader"] { display: none !important; }
 footer                         { display: none !important; }
 #MainMenu                      { display: none !important; }
 
-/* ══ SIDEBAR — desktop: fixo; mobile: overlay colapsável ════ */
+/* ══ SIDEBAR base ════════════════════════════════════════════ */
 section[data-testid="stSidebar"] {
   background: #1e2447 !important;
   border-right: 1px solid rgba(255,255,255,.07) !important;
+  transition: transform .28s cubic-bezier(.4,0,.2,1),
+              visibility .28s, opacity .28s !important;
 }
 section[data-testid="stSidebar"] *   { color: #a0aac8 !important; }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3  { color: #e8ecff !important; }
 
-/* Desktop (≥ 768px): sidebar sempre visível, não sobrepõe */
+/* Esconde SEMPRE o botão nativo de colapso do Streamlit */
+button[data-testid="collapsedControl"],
+button[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapseButton"],
+button[kind="header"][data-testid="baseButton-header"] {
+  display: none !important;
+}
+
+/* ══ DESKTOP (≥ 768px): sidebar fixa, sempre visível ═══════ */
 @media (min-width: 768px) {
   section[data-testid="stSidebar"] {
-    min-width: 240px !important;
     position: relative !important;
     transform: none !important;
     visibility: visible !important;
     opacity: 1 !important;
+    min-width: 244px !important;
     z-index: 1 !important;
   }
-  /* esconde botão nativo de colapso no desktop */
-  button[data-testid="collapsedControl"],
-  button[data-testid="stSidebarCollapseButton"],
-  button[kind="header"][data-testid="baseButton-header"] {
-    display: none !important;
-  }
-  /* botão hamburger customizado não precisa aparecer no desktop */
-  #cf-menu-btn { display: none !important; }
-  /* ajusta padding do conteúdo para não ficar atrás do btn no desktop */
+  #cf-menu-btn    { display: none !important; }
+  #cf-overlay     { display: none !important; }
   .block-container { padding-top: 1.2rem !important; }
 }
 
-/* Mobile/tablet (< 768px): sidebar colapsa e vai para overlay */
+/* ══ MOBILE / TABLET (< 768px): drawer deslizante ══════════ */
 @media (max-width: 767px) {
-  /* Deixa o Streamlit controlar a sidebar normalmente (overlay) */
+  /* sidebar some por padrão (fora da tela à esquerda) */
   section[data-testid="stSidebar"] {
-    z-index: 9999 !important;
-    min-width: unset !important;
-  }
-  /* quando colapsada, some completamente */
-  section[data-testid="stSidebar"][aria-expanded="false"] {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    height: 100dvh !important;
+    width: 82vw !important;
+    max-width: 300px !important;
+    z-index: 10000 !important;
     transform: translateX(-110%) !important;
     visibility: hidden !important;
-    pointer-events: none !important;
+    opacity: 0 !important;
+    overflow-y: auto !important;
+    box-shadow: none !important;
   }
-  /* quando aberta, cobre a tela */
-  section[data-testid="stSidebar"][aria-expanded="true"] {
+  /* sidebar aberta — classe .sb-open no <body> */
+  body.sb-open section[data-testid="stSidebar"] {
     transform: translateX(0) !important;
     visibility: visible !important;
-    width: 85vw !important;
-    max-width: 320px !important;
-    box-shadow: 4px 0 32px rgba(0,0,0,.5) !important;
+    opacity: 1 !important;
+    box-shadow: 6px 0 40px rgba(0,0,0,.6) !important;
   }
-  /* mostra o botão hamburger nativo do Streamlit no mobile */
-  button[data-testid="collapsedControl"],
-  button[data-testid="stSidebarCollapseButton"] {
-    display: flex !important;
+  /* conteúdo principal não se move */
+  .main .block-container {
+    padding-top: 3.8rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
-  /* espaço para o conteúdo não ficar atrás do btn nativo */
-  .block-container { padding-top: 3.5rem !important; }
-  /* métricas empilham em 2 colunas no mobile */
-  [data-testid="stMetric"] { min-width: 0 !important; }
 }
 
-/* ══ OVERLAY escurecido quando sidebar aberta no mobile ═════ */
-#cf-sidebar-overlay {
+/* ══ OVERLAY escuro por trás da sidebar ═════════════════════ */
+#cf-overlay {
   display: none;
-  position: fixed; inset: 0; z-index: 9998;
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  transition: opacity .25s;
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
-#cf-sidebar-overlay.visible { display: block; }
+body.sb-open #cf-overlay { display: block; }
 
-/* ══ BOTÃO hamburger customizado (fallback extra) ═══════════ */
+/* ══ BOTÃO ☰ hamburger fixo (mobile only) ═══════════════════ */
 #cf-menu-btn {
-  position: fixed; top: 12px; left: 12px; z-index: 99999;
-  width: 42px; height: 42px;
+  display: none;          /* JS mostra apenas no mobile */
+  position: fixed;
+  top: 10px; left: 10px;
+  z-index: 10001;
+  width: 44px; height: 44px;
   background: linear-gradient(135deg,#5b7cfd,#6c63ff);
-  color: #fff; border: none; border-radius: 12px;
-  font-size: 18px; cursor: pointer;
-  box-shadow: 0 4px 16px rgba(91,124,253,.45);
-  display: none; align-items: center; justify-content: center;
-  transition: filter .18s, transform .18s;
+  color: #fff; border: none; border-radius: 13px;
+  font-size: 20px; line-height: 1; cursor: pointer;
+  align-items: center; justify-content: center;
+  box-shadow: 0 4px 18px rgba(91,124,253,.5);
+  transition: transform .18s, filter .18s;
 }
-#cf-menu-btn:hover { filter: brightness(1.12); transform: scale(1.05); }
+#cf-menu-btn:active { transform: scale(.93); filter: brightness(1.15); }
 
 /* ══ MÉTRICAS ════════════════════════════════════════════════ */
 [data-testid="stMetric"]        { background: #232b50 !important; border: 1px solid rgba(255,255,255,.07) !important; border-radius: 12px !important; padding: 14px 16px !important; }
@@ -535,85 +539,80 @@ h1, h2, h3               { color: #e8ecff !important; -webkit-text-fill-color: #
 </style>
 """, unsafe_allow_html=True)
 
-# ── JS responsivo: overlay escuro + botão hamburger no mobile ─
+# ── Elementos HTML do menu mobile + JS ───────────────────────
 st.markdown("""
-<div id="cf-sidebar-overlay" onclick="closeSidebar()"></div>
-<button id="cf-menu-btn" title="Menu" onclick="toggleSidebar()">☰</button>
+<div id="cf-overlay" onclick="cfClose()"></div>
+<button id="cf-menu-btn" title="Abrir menu" onclick="cfToggle()">☰</button>
 
 <script>
-(function() {
-  var MOBILE = () => window.innerWidth < 768;
+(function(){
+  /* ── helpers ─────────────────────────────────────── */
+  function mobile(){ return window.innerWidth < 768; }
 
-  // Encontra o botão nativo de toggle do Streamlit
-  function getNativeBtn() {
-    return document.querySelector(
-      'button[data-testid="collapsedControl"], ' +
-      'button[data-testid="stSidebarCollapseButton"], ' +
-      'button[kind="header"]'
-    );
+  function isOpen(){
+    return document.body.classList.contains('sb-open');
   }
 
-  function getSidebar() {
-    return document.querySelector('section[data-testid="stSidebar"]');
+  function cfOpen(){
+    document.body.classList.add('sb-open');
+    var btn = document.getElementById('cf-menu-btn');
+    if(btn){ btn.textContent = '✕'; btn.title = 'Fechar menu'; }
   }
 
-  function isSidebarOpen() {
-    var sb = getSidebar();
-    if (!sb) return false;
-    // Streamlit usa aria-expanded na sidebar
-    return sb.getAttribute('aria-expanded') !== 'false' &&
-           sb.getBoundingClientRect().width > 50;
+  function cfClose(){
+    document.body.classList.remove('sb-open');
+    var btn = document.getElementById('cf-menu-btn');
+    if(btn){ btn.textContent = '☰'; btn.title = 'Abrir menu'; }
   }
 
-  function toggleSidebar() {
-    var btn = getNativeBtn();
-    if (btn) btn.click();
-    // fallback: manipula diretamente
-    var sb = getSidebar();
-    if (sb) {
-      var open = isSidebarOpen();
-      sb.setAttribute('aria-expanded', open ? 'false' : 'true');
-    }
-    setTimeout(syncUI, 80);
-  }
+  window.cfToggle = function(){ isOpen() ? cfClose() : cfOpen(); };
+  window.cfClose  = cfClose;
 
-  function closeSidebar() {
-    if (isSidebarOpen()) toggleSidebar();
-  }
-
-  function syncUI() {
-    var overlay = document.getElementById('cf-sidebar-overlay');
-    var menuBtn = document.getElementById('cf-menu-btn');
-    if (!overlay || !menuBtn) return;
-    var open = isSidebarOpen();
-    if (MOBILE()) {
-      menuBtn.style.display = open ? 'none' : 'flex';
-      overlay.classList.toggle('visible', open);
+  /* ── mostra/esconde botão ☰ conforme largura ─────── */
+  function syncBtn(){
+    var btn = document.getElementById('cf-menu-btn');
+    if(!btn) return;
+    if(mobile()){
+      btn.style.display = 'flex';
+      // garante sidebar fechada ao entrar no mobile
+      if(isOpen()) cfClose();
     } else {
-      menuBtn.style.display = 'none';
-      overlay.classList.remove('visible');
+      btn.style.display = 'none';
+      document.body.classList.remove('sb-open');
     }
   }
 
-  window.toggleSidebar = toggleSidebar;
-  window.closeSidebar  = closeSidebar;
-
-  // Fecha ao clicar fora (overlay)
-  document.getElementById('cf-sidebar-overlay').addEventListener('click', closeSidebar);
-
-  // Observa mudanças na sidebar para sincronizar o overlay/btn
-  function attachObserver() {
-    var sb = getSidebar();
-    if (!sb) { setTimeout(attachObserver, 200); return; }
-    var mo = new MutationObserver(syncUI);
-    mo.observe(sb, { attributes: true, attributeFilter: ['style','class','aria-expanded'] });
-    syncUI();
+  /* Fecha a sidebar quando o usuário clica em qualquer item
+     do menu (Streamlit faz rerun e o drawer deve fechar) */
+  function watchSidebarClicks(){
+    var sb = document.querySelector('section[data-testid="stSidebar"]');
+    if(!sb){ setTimeout(watchSidebarClicks, 300); return; }
+    sb.addEventListener('click', function(e){
+      // clique em radio button / link → fecha
+      if(mobile() && isOpen()){
+        var tag = e.target.tagName;
+        if(tag === 'INPUT' || tag === 'LABEL' || tag === 'SPAN' || tag === 'P'){
+          setTimeout(cfClose, 120);
+        }
+      }
+    });
   }
-  attachObserver();
 
-  window.addEventListener('resize', syncUI);
-  // Verificação periódica como safety net
-  setInterval(syncUI, 600);
+  /* ── init ────────────────────────────────────────── */
+  function init(){
+    syncBtn();
+    watchSidebarClicks();
+    window.addEventListener('resize', syncBtn);
+  }
+
+  // aguarda DOM pronto
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  // safety net para Streamlit re-renders
+  setInterval(syncBtn, 800);
 })();
 </script>
 """, unsafe_allow_html=True)
