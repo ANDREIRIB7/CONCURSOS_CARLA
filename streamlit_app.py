@@ -60,7 +60,7 @@ st.set_page_config(
     page_title="ConcursoFocus",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",  # desktop: expanded; mobile: collapsed
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ def add_sessao(s: dict):
         _local_save(SES_FILE, ses)
 
 # ─────────────────────────────────────────────────────────────
-#  CSS
+#  CSS — tema + responsividade mobile/tablet
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -264,17 +264,101 @@ header[data-testid="stHeader"] { display: none !important; }
 footer                         { display: none !important; }
 #MainMenu                      { display: none !important; }
 
-section[data-testid="stSidebar"]          { background: #1e2447 !important; border-right: 1px solid rgba(255,255,255,.07) !important; }
-section[data-testid="stSidebar"] *        { color: #a0aac8 !important; }
+/* ══ SIDEBAR — desktop: fixo; mobile: overlay colapsável ════ */
+section[data-testid="stSidebar"] {
+  background: #1e2447 !important;
+  border-right: 1px solid rgba(255,255,255,.07) !important;
+}
+section[data-testid="stSidebar"] *   { color: #a0aac8 !important; }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3       { color: #e8ecff !important; }
+section[data-testid="stSidebar"] h3  { color: #e8ecff !important; }
 
-[data-testid="stMetric"]                  { background: #232b50 !important; border: 1px solid rgba(255,255,255,.07) !important; border-radius: 12px !important; padding: 14px 16px !important; }
-[data-testid="stMetricLabel"] p           { color: #6b7a9e !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .5px !important; margin: 0 !important; }
-[data-testid="stMetricValue"]             { color: #e8ecff !important; font-size: 24px !important; font-weight: 700 !important; }
-[data-testid="stMetricDelta"] *           { font-size: 11px !important; }
+/* Desktop (≥ 768px): sidebar sempre visível, não sobrepõe */
+@media (min-width: 768px) {
+  section[data-testid="stSidebar"] {
+    min-width: 240px !important;
+    position: relative !important;
+    transform: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1 !important;
+  }
+  /* esconde botão nativo de colapso no desktop */
+  button[data-testid="collapsedControl"],
+  button[data-testid="stSidebarCollapseButton"],
+  button[kind="header"][data-testid="baseButton-header"] {
+    display: none !important;
+  }
+  /* botão hamburger customizado não precisa aparecer no desktop */
+  #cf-menu-btn { display: none !important; }
+  /* ajusta padding do conteúdo para não ficar atrás do btn no desktop */
+  .block-container { padding-top: 1.2rem !important; }
+}
 
+/* Mobile/tablet (< 768px): sidebar colapsa e vai para overlay */
+@media (max-width: 767px) {
+  /* Deixa o Streamlit controlar a sidebar normalmente (overlay) */
+  section[data-testid="stSidebar"] {
+    z-index: 9999 !important;
+    min-width: unset !important;
+  }
+  /* quando colapsada, some completamente */
+  section[data-testid="stSidebar"][aria-expanded="false"] {
+    transform: translateX(-110%) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  /* quando aberta, cobre a tela */
+  section[data-testid="stSidebar"][aria-expanded="true"] {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    width: 85vw !important;
+    max-width: 320px !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,.5) !important;
+  }
+  /* mostra o botão hamburger nativo do Streamlit no mobile */
+  button[data-testid="collapsedControl"],
+  button[data-testid="stSidebarCollapseButton"] {
+    display: flex !important;
+  }
+  /* espaço para o conteúdo não ficar atrás do btn nativo */
+  .block-container { padding-top: 3.5rem !important; }
+  /* métricas empilham em 2 colunas no mobile */
+  [data-testid="stMetric"] { min-width: 0 !important; }
+}
+
+/* ══ OVERLAY escurecido quando sidebar aberta no mobile ═════ */
+#cf-sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  transition: opacity .25s;
+}
+#cf-sidebar-overlay.visible { display: block; }
+
+/* ══ BOTÃO hamburger customizado (fallback extra) ═══════════ */
+#cf-menu-btn {
+  position: fixed; top: 12px; left: 12px; z-index: 99999;
+  width: 42px; height: 42px;
+  background: linear-gradient(135deg,#5b7cfd,#6c63ff);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 18px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(91,124,253,.45);
+  display: none; align-items: center; justify-content: center;
+  transition: filter .18s, transform .18s;
+}
+#cf-menu-btn:hover { filter: brightness(1.12); transform: scale(1.05); }
+
+/* ══ MÉTRICAS ════════════════════════════════════════════════ */
+[data-testid="stMetric"]        { background: #232b50 !important; border: 1px solid rgba(255,255,255,.07) !important; border-radius: 12px !important; padding: 14px 16px !important; }
+[data-testid="stMetricLabel"] p { color: #6b7a9e !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .5px !important; margin: 0 !important; }
+[data-testid="stMetricValue"]   { color: #e8ecff !important; font-size: 24px !important; font-weight: 700 !important; }
+[data-testid="stMetricDelta"] * { font-size: 11px !important; }
+
+/* ══ INPUTS ══════════════════════════════════════════════════ */
 input, input[type="text"], input[type="number"], input[type="date"],
 input[type="time"], input[type="datetime-local"], input[type="email"],
 input[type="password"], input[type="search"], textarea {
@@ -285,6 +369,7 @@ input[type="password"], input[type="search"], textarea {
   border-radius:    9px !important;
   caret-color:      #7b96ff !important;
   -webkit-text-fill-color: #e8ecff !important;
+  font-size: 16px !important; /* evita zoom automático no iOS */
 }
 input::placeholder, textarea::placeholder {
   color: #3e4870 !important;
@@ -314,6 +399,7 @@ div[data-testid="stTextArea"]     > div > div > textarea {
   box-shadow: none !important;
 }
 
+/* ══ SELECTBOX ════════════════════════════════════════════════ */
 div[data-baseweb="select"] > div {
   background-color: #1c2340 !important;
   background:       #1c2340 !important;
@@ -350,6 +436,7 @@ div[data-baseweb="option"][aria-selected="true"] {
 }
 div[data-baseweb="select"] svg { fill: #6b7a9e !important; }
 
+/* ══ LABELS ══════════════════════════════════════════════════ */
 [data-testid="stWidgetLabel"] p,
 [data-testid="stWidgetLabel"] label,
 label {
@@ -360,6 +447,7 @@ label {
   letter-spacing:  .5px !important;
 }
 
+/* ══ BOTÕES ══════════════════════════════════════════════════ */
 .stButton > button,
 [data-testid="stFormSubmitButton"] > button {
   background:   linear-gradient(135deg,#5b7cfd,#6c63ff) !important;
@@ -385,6 +473,7 @@ label {
 }
 [data-testid="stFormSubmitButton"] > button { width: 100% !important; padding: 12px !important; }
 
+/* ══ CHECKBOX & RADIO ════════════════════════════════════════ */
 .stCheckbox span, .stRadio span   { color: #a0aac8 !important; -webkit-text-fill-color: #a0aac8 !important; }
 .stCheckbox input[type="checkbox"] { accent-color: #5b7cfd !important; }
 .stRadio [data-testid="stMarkdownContainer"] p { color: #a0aac8 !important; font-size: 13px !important; font-weight: 500 !important; text-transform: none !important; letter-spacing: 0 !important; }
@@ -404,11 +493,13 @@ div[data-testid="stTimeInput"] button {
   border:     none !important;
 }
 
+/* ══ DATAFRAME ════════════════════════════════════════════════ */
 [data-testid="stDataFrame"]           { background: #1e2447 !important; border-radius: 12px !important; overflow: hidden; }
 [data-testid="stDataFrame"] *         { background: #1e2447 !important; color: #a0aac8 !important; }
 [data-testid="stDataFrame"] th        { color: #6b7a9e !important; font-size: 11px !important; text-transform: uppercase !important; background: #1a1f3a !important; }
 [data-testid="stDataFrame"] tr:hover td { background: rgba(91,124,253,.05) !important; }
 
+/* ══ FORM ════════════════════════════════════════════════════ */
 [data-testid="stForm"] {
   background:   #232b50 !important;
   border:       1px solid rgba(255,255,255,.07) !important;
@@ -416,6 +507,7 @@ div[data-testid="stTimeInput"] button {
   padding:      20px !important;
 }
 
+/* ══ ALERTS ══════════════════════════════════════════════════ */
 [data-testid="stAlert"]  { border-radius: 10px !important; }
 .stSuccess               { background: rgba(74,201,138,.1) !important; border-color: rgba(74,201,138,.3) !important; }
 .stSuccess *             { color: #4ac98a !important; }
@@ -436,70 +528,92 @@ h1, h2, h3               { color: #e8ecff !important; -webkit-text-fill-color: #
 [data-testid="stExpander"] summary,
 [data-testid="stExpander"] summary * { color: #e8ecff !important; }
 
-.stTabs [data-baseweb="tab-list"]           { background: #1e2447 !important; border-radius: 10px !important; gap: 4px !important; padding: 4px !important; }
-.stTabs [data-baseweb="tab"]                { background: transparent !important; border-radius: 7px !important; color: #6b7a9e !important; font-weight: 600 !important; font-size: 13px !important; }
-.stTabs [aria-selected="true"]              { background: #232b50 !important; color: #7b96ff !important; }
-.stTabs [data-baseweb="tab-panel"]          { background: transparent !important; padding-top: .8rem !important; }
-
-button[data-testid="collapsedControl"],
-button[kind="header"][data-testid="baseButton-header"] {
-  display: none !important;
-}
-section[data-testid="stSidebar"] {
-  min-width: 240px !important;
-  transform: none !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-#btn-sidebar-restore {
-  position: fixed; top: 16px; left: 16px; z-index: 99999;
-  background: linear-gradient(135deg, #5b7cfd, #6c63ff);
-  color: #fff; border: none; border-radius: 10px; padding: 9px 14px;
-  font-size: 18px; cursor: pointer; box-shadow: 0 4px 16px rgba(91,124,253,.45);
-  display: none; align-items: center; justify-content: center;
-  transition: filter .18s, transform .18s;
-}
-#btn-sidebar-restore:hover { filter: brightness(1.12); transform: scale(1.06); }
+.stTabs [data-baseweb="tab-list"]  { background: #1e2447 !important; border-radius: 10px !important; gap: 4px !important; padding: 4px !important; }
+.stTabs [data-baseweb="tab"]       { background: transparent !important; border-radius: 7px !important; color: #6b7a9e !important; font-weight: 600 !important; font-size: 13px !important; }
+.stTabs [aria-selected="true"]     { background: #232b50 !important; color: #7b96ff !important; }
+.stTabs [data-baseweb="tab-panel"] { background: transparent !important; padding-top: .8rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
+# ── JS responsivo: overlay escuro + botão hamburger no mobile ─
 st.markdown("""
-<button id="btn-sidebar-restore" title="Abrir menu" onclick="restoreSidebar()">☰</button>
+<div id="cf-sidebar-overlay" onclick="closeSidebar()"></div>
+<button id="cf-menu-btn" title="Menu" onclick="toggleSidebar()">☰</button>
+
 <script>
 (function() {
-  try {
-    Object.keys(localStorage).forEach(k => {
-      if (k.includes('sidebar') || k.includes('Sidebar')) localStorage.removeItem(k);
-    });
-  } catch(e) {}
-  function restoreSidebar() {
-    document.querySelectorAll('button[data-testid="collapsedControl"], button[kind="header"], [data-testid="stSidebarCollapseButton"]').forEach(b => b.click());
-    document.querySelectorAll('[data-testid="stSidebar"]').forEach(el => {
-      el.style.transform = ''; el.style.visibility = 'visible';
-      el.style.opacity = '1'; el.style.minWidth = '240px';
-      el.classList.remove('st-emotion-cache-hidden');
-    });
-    try { Object.keys(localStorage).forEach(k => { if (k.toLowerCase().includes('sidebar')) localStorage.removeItem(k); }); } catch(e) {}
-    updateBtn();
+  var MOBILE = () => window.innerWidth < 768;
+
+  // Encontra o botão nativo de toggle do Streamlit
+  function getNativeBtn() {
+    return document.querySelector(
+      'button[data-testid="collapsedControl"], ' +
+      'button[data-testid="stSidebarCollapseButton"], ' +
+      'button[kind="header"]'
+    );
   }
-  window.restoreSidebar = restoreSidebar;
-  function isSidebarHidden() {
-    const sb = document.querySelector('[data-testid="stSidebar"]');
-    return sb ? sb.getBoundingClientRect().width < 50 : false;
+
+  function getSidebar() {
+    return document.querySelector('section[data-testid="stSidebar"]');
   }
-  function updateBtn() {
-    const btn = document.getElementById('btn-sidebar-restore');
-    if (btn) btn.style.display = isSidebarHidden() ? 'flex' : 'none';
+
+  function isSidebarOpen() {
+    var sb = getSidebar();
+    if (!sb) return false;
+    // Streamlit usa aria-expanded na sidebar
+    return sb.getAttribute('aria-expanded') !== 'false' &&
+           sb.getBoundingClientRect().width > 50;
   }
-  const observer = new MutationObserver(updateBtn);
+
+  function toggleSidebar() {
+    var btn = getNativeBtn();
+    if (btn) btn.click();
+    // fallback: manipula diretamente
+    var sb = getSidebar();
+    if (sb) {
+      var open = isSidebarOpen();
+      sb.setAttribute('aria-expanded', open ? 'false' : 'true');
+    }
+    setTimeout(syncUI, 80);
+  }
+
+  function closeSidebar() {
+    if (isSidebarOpen()) toggleSidebar();
+  }
+
+  function syncUI() {
+    var overlay = document.getElementById('cf-sidebar-overlay');
+    var menuBtn = document.getElementById('cf-menu-btn');
+    if (!overlay || !menuBtn) return;
+    var open = isSidebarOpen();
+    if (MOBILE()) {
+      menuBtn.style.display = open ? 'none' : 'flex';
+      overlay.classList.toggle('visible', open);
+    } else {
+      menuBtn.style.display = 'none';
+      overlay.classList.remove('visible');
+    }
+  }
+
+  window.toggleSidebar = toggleSidebar;
+  window.closeSidebar  = closeSidebar;
+
+  // Fecha ao clicar fora (overlay)
+  document.getElementById('cf-sidebar-overlay').addEventListener('click', closeSidebar);
+
+  // Observa mudanças na sidebar para sincronizar o overlay/btn
   function attachObserver() {
-    const sb = document.querySelector('[data-testid="stSidebar"]');
-    if (sb) { observer.observe(sb, { attributes: true, attributeFilter: ['style','class'], subtree: false }); updateBtn(); }
-    else setTimeout(attachObserver, 300);
+    var sb = getSidebar();
+    if (!sb) { setTimeout(attachObserver, 200); return; }
+    var mo = new MutationObserver(syncUI);
+    mo.observe(sb, { attributes: true, attributeFilter: ['style','class','aria-expanded'] });
+    syncUI();
   }
   attachObserver();
-  window.addEventListener('resize', updateBtn);
-  setInterval(updateBtn, 800);
+
+  window.addEventListener('resize', syncUI);
+  // Verificação periódica como safety net
+  setInterval(syncUI, 600);
 })();
 </script>
 """, unsafe_allow_html=True)
