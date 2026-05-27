@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║  ConcursoFocus — Sistema de Estudos para Concursos Públicos                 ║
+║  Carla_Servidora — Sistema de Estudos para Concursos Públicos                 ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  PERSISTÊNCIA COM SUPABASE (recomendado — dados nunca somem)                ║
 ║                                                                              ║
@@ -63,7 +63,7 @@ from datetime import datetime, date, timedelta
 #  CONFIGURAÇÃO DA PÁGINA  (deve ser a 1ª chamada Streamlit)
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="ConcursoFocus",
+    page_title="Carla_Servidora",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="auto",  # desktop: expanded; mobile: collapsed
@@ -197,7 +197,7 @@ def _gist_load(filename: str) -> list:
         t, gid = cfg
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
-            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus"},
+            headers={"Authorization": f"token {t}", "User-Agent": "Carla_Servidora"},
         )
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read())
@@ -215,7 +215,7 @@ def _gist_save(filename: str, data: list):
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
             data=body,
-            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus", "Content-Type": "application/json"},
+            headers={"Authorization": f"token {t}", "User-Agent": "Carla_Servidora", "Content-Type": "application/json"},
             method="PATCH",
         )
         urllib.request.urlopen(req, timeout=10)
@@ -635,7 +635,7 @@ with st.sidebar:
         <div style='width:36px;height:36px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:10px;
                     display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0'>⚡</div>
         <div>
-          <div style='font-size:15px;font-weight:700;color:#e8ecff !important'>ConcursoFocus</div>
+          <div style='font-size:15px;font-weight:700;color:#e8ecff !important'>Carla_Servidora</div>
           <div style='font-size:10px;color:#6b7a9e'>Sistema de Aprovação</div>
         </div>
       </div>
@@ -834,7 +834,7 @@ if pagina == "📊 Dashboard":
            f"{d['th']}h estudadas · {d['taxa']}% de acerto geral"
            if d["th"] > 0 else
            "Nenhuma sessão ainda — comece hoje! 🚀")
-    banner_card("Bom estudo, Candidato! 👋", msg)
+    banner_card("Bom estudo, Carla! 👋", msg)
 
     cols = st.columns(6)
     metrics = [
@@ -1306,7 +1306,7 @@ elif pagina == "🗂️ Histórico":
 #  PÁGINA: AJUDA — Manual do Usuário
 # ─────────────────────────────────────────────────────────────
 elif pagina == "❓ Ajuda":
-    st.markdown("<h2 style='margin-bottom:2px'>Manual do Usuário</h2><p style='color:#6b7a9e;margin-bottom:24px'>Como usar o ConcursoFocus no dia a dia</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='margin-bottom:2px'>Manual do Usuário</h2><p style='color:#6b7a9e;margin-bottom:24px'>Como usar o Carla_Servidora no dia a dia</p>", unsafe_allow_html=True)
 
     def _tip(emoji, titulo, corpo):
         st.markdown(f"""
