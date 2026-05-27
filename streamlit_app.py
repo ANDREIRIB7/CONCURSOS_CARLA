@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║  Carla_Servidora — Sistema de Estudos para Concursos Públicos                 ║
+║  ConcursoFocus — Sistema de Estudos para Concursos Públicos                 ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  PERSISTÊNCIA COM SUPABASE (recomendado — dados nunca somem)                ║
 ║                                                                              ║
@@ -63,7 +63,7 @@ from datetime import datetime, date, timedelta
 #  CONFIGURAÇÃO DA PÁGINA  (deve ser a 1ª chamada Streamlit)
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Carla_Servidora",
+    page_title="ConcursoFocus",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="auto",  # desktop: expanded; mobile: collapsed
@@ -197,7 +197,7 @@ def _gist_load(filename: str) -> list:
         t, gid = cfg
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
-            headers={"Authorization": f"token {t}", "User-Agent": "Carla_Servidora"},
+            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus"},
         )
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read())
@@ -215,7 +215,7 @@ def _gist_save(filename: str, data: list):
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
             data=body,
-            headers={"Authorization": f"token {t}", "User-Agent": "Carla_Servidora", "Content-Type": "application/json"},
+            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus", "Content-Type": "application/json"},
             method="PATCH",
         )
         urllib.request.urlopen(req, timeout=10)
@@ -635,7 +635,7 @@ with st.sidebar:
         <div style='width:36px;height:36px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:10px;
                     display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0'>⚡</div>
         <div>
-          <div style='font-size:15px;font-weight:700;color:#e8ecff !important'>Carla_Servidora</div>
+          <div style='font-size:15px;font-weight:700;color:#e8ecff !important'>ConcursoFocus</div>
           <div style='font-size:10px;color:#6b7a9e'>Sistema de Aprovação</div>
         </div>
       </div>
@@ -834,7 +834,7 @@ if pagina == "📊 Dashboard":
            f"{d['th']}h estudadas · {d['taxa']}% de acerto geral"
            if d["th"] > 0 else
            "Nenhuma sessão ainda — comece hoje! 🚀")
-    banner_card("Bom estudo, Carla! 👋", msg)
+    banner_card("Bom estudo, Candidato! 👋", msg)
 
     cols = st.columns(6)
     metrics = [
@@ -1306,7 +1306,7 @@ elif pagina == "🗂️ Histórico":
 #  PÁGINA: AJUDA — Manual do Usuário
 # ─────────────────────────────────────────────────────────────
 elif pagina == "❓ Ajuda":
-    st.markdown("<h2 style='margin-bottom:2px'>Manual do Usuário</h2><p style='color:#6b7a9e;margin-bottom:24px'>Como usar o Carla_Servidora no dia a dia</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='margin-bottom:2px'>Manual do Usuário</h2><p style='color:#6b7a9e;margin-bottom:24px'>Como usar o ConcursoFocus no dia a dia</p>", unsafe_allow_html=True)
 
     def _tip(emoji, titulo, corpo):
         st.markdown(f"""
@@ -1342,48 +1342,18 @@ elif pagina == "❓ Ajuda":
     # ── Rotina diária ────────────────────────────────────────
     _section("📅 Rotina diária recomendada", "#7b96ff")
 
-    st.markdown("""
-    <div style='background:#1e2447;border-radius:12px;padding:20px;margin-bottom:12px'>
-      <div style='display:flex;flex-direction:column;gap:0'>
-
-        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)'>
-          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
-                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>1</div>
-          <div>
-            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Abra o app e vá em <span style='color:#7b96ff'>🎯 Estudar</span></div>
-            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>O sistema sugere automaticamente a matéria mais prioritária do dia, baseada no edital e no tempo sem estudar aquele conteúdo.</div>
-          </div>
-        </div>
-
-        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)'>
-          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
-                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>2</div>
-          <div>
-            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Estude a matéria sugerida</div>
-            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>Use seu material habitual (apostila, PDF, vídeo). Anote o horário de início e quantas questões resolveu.</div>
-          </div>
-        </div>
-
-        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)'>
-          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
-                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>3</div>
-          <div>
-            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Registre em <span style='color:#7b96ff'>✏️ Registrar</span></div>
-            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>Logo após estudar, lance o que fez: matéria, conteúdo, duração, acertos e erros. Quanto mais completo, melhor a sugestão do próximo dia.</div>
-          </div>
-        </div>
-
-        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0'>
-          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
-                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>4</div>
-          <div>
-            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Confira o <span style='color:#7b96ff'>📊 Dashboard</span> no final do dia</div>
-            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>Veja suas horas acumuladas, taxa de acerto e sequência de dias. O gráfico dos 14 dias mostra sua consistência.</div>
-          </div>
-        </div>
-
-      </div>
-    </div>""", unsafe_allow_html=True)
+    _tip("1️⃣", "Abra o app e vá em 🎯 Estudar",
+         "O sistema sugere automaticamente a matéria mais prioritária do dia, "
+         "baseada no edital e no tempo desde o último estudo daquele conteúdo.")
+    _tip("2️⃣", "Estude a matéria sugerida",
+         "Use seu material habitual (apostila, PDF, vídeo). "
+         "Anote o horário de início e quantas questões resolveu.")
+    _tip("3️⃣", "Registre em ✏️ Registrar",
+         "Logo após estudar, lance o que fez: matéria, conteúdo, duração, acertos e erros. "
+         "Quanto mais completo, melhor a sugestão do próximo dia.")
+    _tip("4️⃣", "Confira o 📊 Dashboard no final do dia",
+         "Veja suas horas acumuladas, taxa de acerto e sequência de dias. "
+         "O gráfico dos 14 dias mostra sua consistência.")
 
     # ── Aba Estudar ──────────────────────────────────────────
     _section("🎯 Aba Estudar — entendendo a sugestão", "#9b72f7")
