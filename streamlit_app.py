@@ -91,45 +91,57 @@ def _supa_cfg():
 def _supa_get_materias() -> list:
     cfg = _supa_cfg()
     if not cfg: return None
+    import urllib.request, urllib.error
+    url, key = cfg
     try:
-        import urllib.request
-        url, key = cfg
         req = urllib.request.Request(
             f"{url}/rest/v1/materias?select=dados&order=id.asc&limit=1",
             headers={"apikey": key, "Authorization": f"Bearer {key}"},
         )
         with urllib.request.urlopen(req, timeout=8) as r:
-            rows = json.loads(r.read())
+            raw = r.read()
+            rows = json.loads(raw)
         if not rows:
             return []
         dados = rows[0].get("dados", [])
         return dados if isinstance(dados, list) else []
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        st.error(f"Supabase HTTP {e.code}: {body[:300]}")
+        return None
     except Exception as e:
-        return None  # retorna None para tentar fallback
+        st.error(f"Supabase erro: {type(e).__name__}: {e}")
+        return None
 
 def _supa_set_materias(data: list):
     cfg = _supa_cfg()
     if not cfg: return
-    import urllib.request as _ur
+    import urllib.request as _ur, urllib.error as _ue
     url, key = cfg
     body = json.dumps({"id": 1, "dados": data}).encode()
     hdrs = {"apikey": key, "Authorization": f"Bearer {key}",
             "Content-Type": "application/json", "Prefer": "return=minimal"}
-    # Tenta PATCH (update) se a linha já existe
+    # Tenta PATCH primeiro
     try:
         req = _ur.Request(f"{url}/rest/v1/materias?id=eq.1",
                           data=body, headers=hdrs, method="PATCH")
         with _ur.urlopen(req, timeout=10): pass
         return
-    except Exception:
-        pass
-    # Fallback: POST (insert) — primeira vez
+    except _ue.HTTPError as e:
+        patch_err = f"PATCH {e.code}: {e.read().decode('utf-8','replace')[:200]}"
+    except Exception as e:
+        patch_err = str(e)
+    # Fallback: POST
     try:
         req = _ur.Request(f"{url}/rest/v1/materias",
                           data=body, headers=hdrs, method="POST")
         with _ur.urlopen(req, timeout=10): pass
+        return
+    except _ue.HTTPError as e:
+        post_err = f"POST {e.code}: {e.read().decode('utf-8','replace')[:200]}"
+        st.error(f"Supabase salvar falhou — {patch_err} | {post_err}")
     except Exception as e:
-        st.error(f"Erro ao salvar no Supabase: {e}")
+        st.error(f"Supabase salvar falhou — {patch_err} | {e}")
 
 def _supa_get_sessoes() -> list:
     cfg = _supa_cfg()
@@ -652,7 +664,14 @@ with st.sidebar:
     )
     st.markdown("<br>", unsafe_allow_html=True)
     if _supa_cfg():
-        st.markdown("<div style='font-size:10px;color:#4ac98a;text-align:center'>🟢 Supabase conectado</div>", unsafe_allow_html=True)
+        # Testa conexão real uma vez por sessão
+        if "supa_ok" not in st.session_state:
+            _t = _supa_get_materias()
+            st.session_state["supa_ok"] = (_t is not None)
+        if st.session_state.get("supa_ok"):
+            st.markdown("<div style='font-size:10px;color:#4ac98a;text-align:center'>🟢 Supabase conectado</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='font-size:10px;color:#f56565;text-align:center'>🔴 Supabase: erro de leitura<br>Veja diagnóstico em Matérias</div>", unsafe_allow_html=True)
     elif _gist_cfg():
         st.markdown("<div style='font-size:10px;color:#f5a623;text-align:center'>🟡 GitHub Gist</div>", unsafe_allow_html=True)
     else:
