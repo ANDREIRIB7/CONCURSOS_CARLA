@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║  CarlaServidora — Sistema de Estudos para Concursos Públicos                 ║
+║  ConcursoFocus — Sistema de Estudos para Concursos Públicos                 ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  PERSISTÊNCIA COM SUPABASE (recomendado — dados nunca somem)                ║
 ║                                                                              ║
@@ -63,7 +63,7 @@ from datetime import datetime, date, timedelta
 #  CONFIGURAÇÃO DA PÁGINA  (deve ser a 1ª chamada Streamlit)
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="CarlaServidora",
+    page_title="ConcursoFocus",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="auto",  # desktop: expanded; mobile: collapsed
@@ -197,7 +197,7 @@ def _gist_load(filename: str) -> list:
         t, gid = cfg
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
-            headers={"Authorization": f"token {t}", "User-Agent": "CarlaServidora"},
+            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus"},
         )
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read())
@@ -215,7 +215,7 @@ def _gist_save(filename: str, data: list):
         req = urllib.request.Request(
             f"https://api.github.com/gists/{gid}",
             data=body,
-            headers={"Authorization": f"token {t}", "User-Agent": "CarlaServidora", "Content-Type": "application/json"},
+            headers={"Authorization": f"token {t}", "User-Agent": "ConcursoFocus", "Content-Type": "application/json"},
             method="PATCH",
         )
         urllib.request.urlopen(req, timeout=10)
@@ -616,10 +616,10 @@ def calc_dash():
 # ─────────────────────────────────────────────────────────────
 #  NAVEGAÇÃO — sidebar no desktop, bottom-nav no mobile
 # ─────────────────────────────────────────────────────────────
-PAGES     = ["📊 Dashboard", "🎯 Estudar", "✏️ Registrar", "📚 Matérias", "🗂️ Histórico"]
-PAGE_KEYS = ["dashboard", "estudar", "registrar", "materias", "historico"]
-PAGE_ICONS = ["📊", "🎯", "✏️", "📚", "🗂️"]
-PAGE_LABELS = ["Dashboard", "Estudar", "Registrar", "Matérias", "Histórico"]
+PAGES     = ["📊 Dashboard", "🎯 Estudar", "✏️ Registrar", "📚 Matérias", "🗂️ Histórico", "❓ Ajuda"]
+PAGE_KEYS = ["dashboard", "estudar", "registrar", "materias", "historico", "ajuda"]
+PAGE_ICONS = ["📊", "🎯", "✏️", "📚", "🗂️", "❓"]
+PAGE_LABELS = ["Dashboard", "Estudar", "Registrar", "Matérias", "Histórico", "Ajuda"]
 
 # lê a página ativa via query param (default: dashboard)
 _qp  = st.query_params.get("p", "dashboard")
@@ -635,7 +635,7 @@ with st.sidebar:
         <div style='width:36px;height:36px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:10px;
                     display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0'>⚡</div>
         <div>
-          <div style='font-size:15px;font-weight:700;color:#e8ecff !important'>CarlaServidora</div>
+          <div style='font-size:15px;font-weight:700;color:#e8ecff !important'>ConcursoFocus</div>
           <div style='font-size:10px;color:#6b7a9e'>Sistema de Aprovação</div>
         </div>
       </div>
@@ -834,7 +834,7 @@ if pagina == "📊 Dashboard":
            f"{d['th']}h estudadas · {d['taxa']}% de acerto geral"
            if d["th"] > 0 else
            "Nenhuma sessão ainda — comece hoje! 🚀")
-    banner_card("Bom estudo, Carla! 👋", msg)
+    banner_card("Bom estudo, Candidato! 👋", msg)
 
     cols = st.columns(6)
     metrics = [
@@ -1301,3 +1301,189 @@ elif pagina == "🗂️ Histórico":
             buf_e = io.StringIO()
             pd.DataFrame(rows).to_csv(buf_e, index=False)
             st.download_button("⬇ Exportar histórico CSV", buf_e.getvalue().encode("utf-8-sig"), "historico_sessoes.csv", "text/csv")
+
+# ─────────────────────────────────────────────────────────────
+#  PÁGINA: AJUDA — Manual do Usuário
+# ─────────────────────────────────────────────────────────────
+elif pagina == "❓ Ajuda":
+    st.markdown("<h2 style='margin-bottom:2px'>Manual do Usuário</h2><p style='color:#6b7a9e;margin-bottom:24px'>Como usar o ConcursoFocus no dia a dia</p>", unsafe_allow_html=True)
+
+    def _tip(emoji, titulo, corpo):
+        st.markdown(f"""
+        <div style='background:#232b50;border:1px solid rgba(255,255,255,.07);border-radius:12px;
+                    padding:18px 20px;margin-bottom:12px'>
+          <div style='display:flex;align-items:center;gap:10px;margin-bottom:8px'>
+            <div style='width:34px;height:34px;background:rgba(91,124,253,.15);border-radius:9px;
+                        display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0'>{emoji}</div>
+            <div style='font-size:14px;font-weight:700;color:#e8ecff'>{titulo}</div>
+          </div>
+          <div style='font-size:13px;color:#a0aac8;line-height:1.7'>{corpo}</div>
+        </div>""", unsafe_allow_html=True)
+
+    def _section(titulo, cor="#5b7cfd"):
+        st.markdown(f"""
+        <div style='display:flex;align-items:center;gap:8px;margin:28px 0 12px'>
+          <div style='width:4px;height:20px;background:{cor};border-radius:2px'></div>
+          <div style='font-size:15px;font-weight:700;color:#e8ecff'>{titulo}</div>
+        </div>""", unsafe_allow_html=True)
+
+    # ── Banner ──────────────────────────────────────────────
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#2a3578,#3040a0);border-radius:14px;
+                padding:22px 26px;margin-bottom:28px;border:1px solid rgba(91,124,253,.3)'>
+      <div style='font-size:17px;font-weight:700;color:#fff;margin-bottom:5px'>👋 Bem-vinda, Carla!</div>
+      <div style='font-size:13px;color:rgba(255,255,255,.7);line-height:1.6'>
+        Este sistema foi feito para organizar seus estudos e maximizar seu desempenho.<br>
+        A rotina ideal é simples: <b style='color:#fff'>Estudar → estudar de verdade → Registrar o que fez</b>.
+        O sistema cuida do resto.
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+    # ── Rotina diária ────────────────────────────────────────
+    _section("📅 Rotina diária recomendada", "#7b96ff")
+
+    st.markdown("""
+    <div style='background:#1e2447;border-radius:12px;padding:20px;margin-bottom:12px'>
+      <div style='display:flex;flex-direction:column;gap:0'>
+
+        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)'>
+          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>1</div>
+          <div>
+            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Abra o app e vá em <span style='color:#7b96ff'>🎯 Estudar</span></div>
+            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>O sistema sugere automaticamente a matéria mais prioritária do dia, baseada no edital e no tempo sem estudar aquele conteúdo.</div>
+          </div>
+        </div>
+
+        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)'>
+          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>2</div>
+          <div>
+            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Estude a matéria sugerida</div>
+            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>Use seu material habitual (apostila, PDF, vídeo). Anote o horário de início e quantas questões resolveu.</div>
+          </div>
+        </div>
+
+        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)'>
+          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>3</div>
+          <div>
+            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Registre em <span style='color:#7b96ff'>✏️ Registrar</span></div>
+            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>Logo após estudar, lance o que fez: matéria, conteúdo, duração, acertos e erros. Quanto mais completo, melhor a sugestão do próximo dia.</div>
+          </div>
+        </div>
+
+        <div style='display:flex;gap:14px;align-items:flex-start;padding:10px 0'>
+          <div style='min-width:32px;height:32px;background:linear-gradient(135deg,#5b7cfd,#9b72f7);border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0'>4</div>
+          <div>
+            <div style='font-size:13px;font-weight:600;color:#e8ecff'>Confira o <span style='color:#7b96ff'>📊 Dashboard</span> no final do dia</div>
+            <div style='font-size:12px;color:#6b7a9e;margin-top:2px'>Veja suas horas acumuladas, taxa de acerto e sequência de dias. O gráfico dos 14 dias mostra sua consistência.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+    # ── Aba Estudar ──────────────────────────────────────────
+    _section("🎯 Aba Estudar — entendendo a sugestão", "#9b72f7")
+
+    _tip("📌", "O que é a 'Sugestão do Sistema'?",
+         "O algoritmo analisa todas as suas matérias e calcula qual precisa mais atenção agora, "
+         "levando em conta: <b style='color:#e8ecff'>prioridade no edital</b>, "
+         "<b style='color:#e8ecff'>quantos dias sem estudar</b> aquele conteúdo e "
+         "<b style='color:#e8ecff'>sua taxa de acerto</b> em questões anteriores. "
+         "Matérias com muitas questões no edital, alta prioridade e que você não vê há dias sobem no ranking.")
+
+    _tip("🔄", "Botão '↻ Nova sugestão'",
+         "Se você já estudou a matéria sugerida hoje ou prefere outra coisa, clique aqui para ver a próxima opção no ranking. "
+         "O sistema vai para a segunda matéria mais prioritária, depois a terceira, e assim por diante.")
+
+    _tip("⚡", "Modo Pré-Edital vs Pós-Edital Turbo",
+         "<b style='color:#e8ecff'>Pré-Edital:</b> foca apenas nas matérias de prioridade Alta e Média — ideal para quem ainda tem tempo antes da prova.<br>"
+         "<b style='color:#e8ecff'>Pós-Edital Turbo:</b> considera todas as matérias, incluindo as de baixa prioridade — use na reta final quando precisa revisar tudo.")
+
+    _tip("▶", "Botão 'Usar esta sugestão'",
+         "Clique aqui para <b style='color:#e8ecff'>pré-preencher</b> a tela de Registrar com a matéria e conteúdo sugeridos. "
+         "Assim, quando terminar de estudar, só precisa completar o tempo e as questões.")
+
+    # ── Aba Registrar ────────────────────────────────────────
+    _section("✏️ Aba Registrar — lançando sua sessão", "#4ac98a")
+
+    _tip("📖", "Tipo: Estudo de Matéria",
+         "Use quando estudou teoria: leu apostila, assistiu aula, fez resumo. "
+         "Não precisa preencher acertos/erros — só matéria, conteúdo, data e duração.")
+
+    _tip("🧩", "Tipo: Resolução de Questões",
+         "Use quando fez simulado ou bateria de questões. "
+         "Preencha <b style='color:#e8ecff'>acertos</b> e <b style='color:#e8ecff'>erros</b> — isso alimenta o cálculo de taxa de acerto e faz o algoritmo priorizar as matérias onde você erra mais.")
+
+    _tip("✅", "Marcar 'Encerrei este conteúdo'",
+         "Marque quando terminou de estudar um conteúdo por completo (ex: terminou o capítulo de Licitações). "
+         "O sistema leva isso em conta na hora de sugerir revisões futuras.")
+
+    _tip("⏱️", "Dica de tempo",
+         "A duração pode ser em minutos. Sessões típicas: teoria = 45–90 min, questões = 30–60 min. "
+         "Seja honesta — registrar 20 min reais é melhor do que inflar o número.")
+
+    # ── Dashboard ────────────────────────────────────────────
+    _section("📊 Dashboard — lendo seus números", "#f5a623")
+
+    _tip("🔥", "Sequência de dias (streak)",
+         "Conta quantos dias seguidos você registrou pelo menos uma sessão. "
+         "<b style='color:#e8ecff'>Não precisa estudar horas</b> — 20 minutos já contam. "
+         "O objetivo é não quebrar a sequência: consistência bate intensidade.")
+
+    _tip("✅", "Taxa de acerto",
+         "Calculada sobre todas as sessões de questões registradas. "
+         "Abaixo de 50% em uma matéria = foco total nela. Entre 50–70% = manter. Acima de 70% = está bem, pode avançar.")
+
+    _tip("📈", "Gráfico dos 14 dias",
+         "Mostra suas horas de estudo nos últimos 14 dias. "
+         "Ideal ver barras relativamente uniformes — picos seguidos de dias vazios indicam que você está estudando em bloco e negligenciando outros dias.")
+
+    _tip("📚", "Tabela por matéria",
+         "Resumo de horas e taxa de acerto por matéria. "
+         "🟢 Bom = acima de 70% · 🟡 Médio = 50–70% · 🔴 Atenção = abaixo de 50% ou sem questões registradas.")
+
+    # ── Histórico ────────────────────────────────────────────
+    _section("🗂️ Histórico — consultando o passado", "#47c8f5")
+
+    _tip("🔍", "Filtrando sessões",
+         "Use os filtros de matéria e período para encontrar sessões específicas. "
+         "Útil para ver quanto tempo dedicou a uma matéria antes de uma prova parcial.")
+
+    _tip("⬇️", "Exportar histórico",
+         "Baixe todas as sessões em XLSX para analisar no Excel, criar gráficos personalizados "
+         "ou guardar um backup do seu progresso.")
+
+    # ── Dicas finais ─────────────────────────────────────────
+    _section("💡 Dicas para aproveitar ao máximo", "#f56565")
+
+    st.markdown("""
+    <div style='background:#232b50;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:20px;'>
+      <div style='display:flex;flex-direction:column;gap:10px'>
+        <div style='display:flex;gap:10px;align-items:flex-start'>
+          <span style='color:#7b96ff;font-size:14px;flex-shrink:0'>→</span>
+          <span style='font-size:13px;color:#a0aac8'><b style='color:#e8ecff'>Registre sempre no mesmo dia.</b> Deixar para depois faz você esquecer a duração real e os acertos.</span>
+        </div>
+        <div style='display:flex;gap:10px;align-items:flex-start'>
+          <span style='color:#7b96ff;font-size:14px;flex-shrink:0'>→</span>
+          <span style='font-size:13px;color:#a0aac8'><b style='color:#e8ecff'>Confie no algoritmo.</b> Ele vai sugerir a mesma matéria várias vezes se você estiver errando muito — isso é correto, significa que precisa de mais prática ali.</span>
+        </div>
+        <div style='display:flex;gap:10px;align-items:flex-start'>
+          <span style='color:#7b96ff;font-size:14px;flex-shrink:0'>→</span>
+          <span style='font-size:13px;color:#a0aac8'><b style='color:#e8ecff'>Misture teoria e questões.</b> Uma sessão de leitura seguida de questões sobre o mesmo conteúdo é o combo mais eficiente.</span>
+        </div>
+        <div style='display:flex;gap:10px;align-items:flex-start'>
+          <span style='color:#7b96ff;font-size:14px;flex-shrink:0'>→</span>
+          <span style='font-size:13px;color:#a0aac8'><b style='color:#e8ecff'>O app funciona em qualquer dispositivo.</b> Use no celular para registrar logo após estudar, sem precisar abrir o computador.</span>
+        </div>
+        <div style='display:flex;gap:10px;align-items:flex-start'>
+          <span style='color:#7b96ff;font-size:14px;flex-shrink:0'>→</span>
+          <span style='font-size:13px;color:#a0aac8'><b style='color:#e8ecff'>Seus dados são salvos na nuvem.</b> Pode fechar o app, trocar de dispositivo ou limpar o cache — tudo fica guardado automaticamente.</span>
+        </div>
+      </div>
+    </div>
+    <br>
+    """, unsafe_allow_html=True)
