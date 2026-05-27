@@ -95,35 +95,41 @@ def _supa_get_materias() -> list:
         import urllib.request
         url, key = cfg
         req = urllib.request.Request(
-            f"{url}/rest/v1/materias?select=dados&order=id.desc&limit=1",
+            f"{url}/rest/v1/materias?select=dados&order=id.asc&limit=1",
             headers={"apikey": key, "Authorization": f"Bearer {key}"},
         )
         with urllib.request.urlopen(req, timeout=8) as r:
             rows = json.loads(r.read())
-        return rows[0]["dados"] if rows else []
-    except Exception:
-        return None
+        if not rows:
+            return []
+        dados = rows[0].get("dados", [])
+        return dados if isinstance(dados, list) else []
+    except Exception as e:
+        return None  # retorna None para tentar fallback
 
 def _supa_set_materias(data: list):
     cfg = _supa_cfg()
     if not cfg: return
+    import urllib.request as _ur
+    url, key = cfg
+    body = json.dumps({"id": 1, "dados": data}).encode()
+    hdrs = {"apikey": key, "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json", "Prefer": "return=minimal"}
+    # Tenta PATCH (update) se a linha já existe
     try:
-        import urllib.request
-        url, key = cfg
-        body = json.dumps({"id": 1, "dados": data}).encode()
-        req = urllib.request.Request(
-            f"{url}/rest/v1/materias",
-            data=body,
-            headers={
-                "apikey": key, "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
-                "Prefer": "resolution=merge-duplicates",
-            },
-            method="POST",
-        )
-        urllib.request.urlopen(req, timeout=10)
+        req = _ur.Request(f"{url}/rest/v1/materias?id=eq.1",
+                          data=body, headers=hdrs, method="PATCH")
+        with _ur.urlopen(req, timeout=10): pass
+        return
     except Exception:
         pass
+    # Fallback: POST (insert) — primeira vez
+    try:
+        req = _ur.Request(f"{url}/rest/v1/materias",
+                          data=body, headers=hdrs, method="POST")
+        with _ur.urlopen(req, timeout=10): pass
+    except Exception as e:
+        st.error(f"Erro ao salvar no Supabase: {e}")
 
 def _supa_get_sessoes() -> list:
     cfg = _supa_cfg()
@@ -224,29 +230,30 @@ if "db_mat" not in st.session_state: st.session_state.db_mat = None
 if "db_ses" not in st.session_state: st.session_state.db_ses = None
 
 def get_materias(force=False) -> list:
+    # Sempre busca do banco na primeira vez ou quando forçado
     if st.session_state.db_mat is None or force:
         v = _supa_get_materias()
         if v is None: v = _gist_load("materias.json")
         if v is None: v = _local_load(MAT_FILE)
-        st.session_state.db_mat = v
+        st.session_state.db_mat = v if v is not None else []
     return st.session_state.db_mat
 
 def get_sessoes(force=False) -> list:
-    # FIX: sempre busca do backend para garantir dashboard atualizado
     v = _supa_get_sessoes()
     if v is None: v = _gist_load("sessoes.json")
     if v is None: v = _local_load(SES_FILE)
-    st.session_state.db_ses = v
+    st.session_state.db_ses = v if v is not None else []
     return st.session_state.db_ses
 
 def save_materias(data: list):
-    st.session_state.db_mat = data
+    # Salva no backend e invalida cache para forçar releitura
     if _supa_cfg():
         _supa_set_materias(data)
     elif _gist_cfg():
         _gist_save("materias.json", data)
     else:
         _local_save(MAT_FILE, data)
+    st.session_state.db_mat = None  # invalida cache → próximo get_materias relê do banco
 
 def add_sessao(s: dict):
     ses = get_sessoes()
@@ -1040,6 +1047,22 @@ elif pagina == "✏️ Registrar":
 # ─────────────────────────────────────────────────────────────
 elif pagina == "📚 Matérias":
     st.markdown("<h2 style='margin-bottom:2px'>Gestão de Matérias</h2><p style='color:#6b7a9e;margin-bottom:18px'>Edital, conteúdos e prioridades</p>", unsafe_allow_html=True)
+
+    # ── Diagnóstico de conexão ────────────────────────────────
+    with st.expander("🔍 Diagnóstico (clique para ver se o banco está funcionando)", expanded=False):
+        cfg_diag = _supa_cfg()
+        if cfg_diag:
+            st.success(f"✅ Supabase configurado")
+            dados_diag = _supa_get_materias()
+            if dados_diag is None:
+                st.error("❌ Falha ao LER do Supabase. Verifique SUPABASE_URL e SUPABASE_KEY no Render.")
+            elif len(dados_diag) == 0:
+                st.warning("⚠️ Banco conectado mas tabela materias está VAZIA — importe a planilha abaixo.")
+            else:
+                st.success(f"✅ {len(dados_diag)} matéria(s) no banco.")
+        else:
+            st.error("❌ Supabase NÃO configurado. Verifique as variáveis SUPABASE_URL e SUPABASE_KEY no painel do Render.")
+        st.caption(f"Cache local: {len(st.session_state.get('db_mat') or [])} itens")
 
     # ── Gera modelo XLSX para download ───────────────────────
     try:
